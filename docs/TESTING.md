@@ -127,3 +127,34 @@ started and all temporary credentials, data, and logs were removed afterward.
 
 The hidden-name test confirms DUFS's intended listing/search behavior; hidden
 names are not treated as a substitute for access control.
+
+## Phase 5 — Custom UI V1 validation
+
+Phase 5 was tested against the existing release binary (`dufs 0.46.0`) with
+`--assets ./custom/assets`, a temporary data directory under `/tmp`, temporary
+Basic credentials, and loopback-only `127.0.0.1:5105`. This was not the
+production Compose service; the process and all test data were removed after
+validation.
+
+| Check | Result |
+| --- | --- |
+| JavaScript syntax (`node --check`) | Pass |
+| Custom HTML placeholders and browser HTML response | Pass |
+| Custom SVG favicon | HTTP 200, `image/svg+xml` |
+| Unauthenticated request | HTTP 401 |
+| Authenticated browse | HTTP 200 |
+| Health | HTTP 200 |
+| Upload / download payload | HTTP 201 / 200; payload matched |
+| Search | HTTP 200; expected result present |
+| New directory / delete | HTTP 201 / 204; delete verified |
+| Archive | HTTP 200; valid ZIP output |
+| SHA-256 hash | HTTP 200; matched local digest |
+| WebDAV `PROPFIND Depth: 1` | HTTP 207; multistatus response |
+| Compose static rendering | Pass; `/assets:ro` and `--assets /assets` present |
+
+Headless Chrome screenshots at 390×844 and 430×932 confirmed Chinese labels,
+the custom favicon response, responsive toolbar/search controls, and long
+file-name ellipsis without a horizontal page overflow. On phone widths, file
+row actions wrap within their dedicated column so that all actions remain
+visible instead of overlapping the name; controls use 36×36 CSS-pixel tap
+targets.

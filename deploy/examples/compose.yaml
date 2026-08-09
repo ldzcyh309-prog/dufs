@@ -14,6 +14,8 @@ services:
     command:
       - --config
       - /config/config.yaml
+      - --assets
+      - /assets
       - --auth
       - ${DUFS_ADMIN_AUTH:?Set DUFS_ADMIN_AUTH in .env}
       - --auth-method

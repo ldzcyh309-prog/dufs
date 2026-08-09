@@ -13,17 +13,17 @@ production deployment for the household/lab environment. Build in
 - Phase 2 — Upstream Baseline Build Validation: complete.
 - Phase 3 — Production Skeleton: complete.
 - Phase 4 — Security Configuration: complete.
-- Current stop point: Phase 4 is complete. Do not start a production service.
-- Next stage: Phase 5 — Custom UI V1.
-- Phase 5 must not automatically enter Phase 6 — Custom Image.
+- Phase 5 — Custom UI V1: complete.
+- Current stop point: Phase 5 is complete. Do not start a production service.
+- Next stage: review/approval. Do not automatically enter Phase 6 — Custom
+  Image.
 
 ## Git state
 
 - Development repository: `/home/ldzcyh/aiDev/workspaces/dufs`.
 - Branch: `custom/v1`.
-- Session-closeout input HEAD and Phase 4 commit:
-  `7abfe59a101c46eae484224efa6cc3a7d1dd5935`
-  (`docs: define production security baseline`).
+- Phase 5 entry HEAD: `712dcb718347f1f83c09a2a0e941d595361326b6`
+  (`docs: finalize phase4 handoff`).
 - Upstream baseline tag: `v0.1.0-upstream-baseline`.
 - Upstream baseline commit:
   `fe7fd564f80dfbac361c8e0589c3845638149d38`.
@@ -31,8 +31,8 @@ production deployment for the household/lab environment. Build in
 - `upstream`: `https://github.com/sigoden/dufs.git`.
 - `origin/main` matches `upstream/main` at the baseline commit; do not develop
   on `main`.
-- `custom/v1` contains only project documentation and sanitized deployment
-  templates so far; no DUFS Rust Core or UI behavior has been customized.
+- `custom/v1` now contains the Phase 5 official-assets UI override and
+  supporting deployment/documentation changes. Rust Core remains unchanged.
 
 After this closeout document is committed, use `git rev-parse HEAD` and
 `git status` as the authoritative current handoff state.
@@ -101,6 +101,22 @@ read/upload/download/search/archive/hash/delete, hidden-name search, symlink
 blocking, health, and log-secret hygiene. Temporary data and credentials were
 removed.
 
+## Phase 5 UI state
+
+- Official source assets: repository `assets/` at the pinned baseline.
+- Custom assets: `/home/ldzcyh/aiDev/workspaces/dufs/custom/assets`.
+- Runtime assets: `/home/ldzcyh/dockerApps/dufs/assets`, mounted read-only.
+- Compose and its sanitized example pass `--assets /assets`.
+- UI V1 uses native HTML/CSS/JavaScript only: Chinese primary UI text, a
+  `DUFS 文件空间` title, a custom SVG favicon, and responsive phone layout.
+- At 390×844 and 430×932, long names ellipsize and controls wrap inside the
+  actions column; no horizontal page overflow was observed.
+- Temporary IPv4-loopback testing passed browse, authentication, upload,
+  download, search, MKCOL, delete, archive, SHA-256 hash, WebDAV PROPFIND,
+  health, favicon delivery, JavaScript syntax, and Compose static rendering.
+- No formal production container was started; final admin secret remains the
+  runtime sentinel.
+
 ## Required prohibitions
 
 - Do not modify Mihomo, its transparent proxy settings, or IPv4/IPv6 policy.
@@ -115,7 +131,7 @@ removed.
 - Do not create a production image, start production DUFS, or create a
   production tag before the corresponding later phases.
 
-## Next-session checklist: Phase 5 — Custom UI V1
+## Next-session checklist: review before any Phase 6 decision
 
 1. Read the two control documents in
    `/home/ldzcyh/aiDev/workspaces/dufs-project` and this `HANDOFF.md`.
@@ -124,9 +140,10 @@ removed.
    is clean and `main` remains the upstream baseline.
 3. Read `docs/ARCHITECTURE.md`, `docs/DEPLOYMENT.md`, `docs/SECURITY.md`,
    `docs/TESTING.md`, and `docs/DECISIONS.md` before changing assets.
-4. Inspect upstream DUFS assets override support and existing UI assets. Prefer
-   external assets, preserve DUFS core interactions and WebDAV compatibility,
-   and do not modify Rust unless the documented Phase 10 conditions are met.
-5. Keep the IPv4-only policy and do not start production Compose. Complete
-   Phase 5 testing and documentation, commit its single-purpose changes, then
-   stop for review; do not proceed automatically to Phase 6.
+4. Review `custom/assets/` against `assets/` with
+   `git diff --no-index assets custom/assets`; preserve DUFS core interactions,
+   Access Control, and WebDAV compatibility. Do not modify Rust unless the
+   documented Phase 10 conditions are met.
+5. Keep the IPv4-only policy and do not start production Compose. Phase 5 is
+   closed after its single-purpose commit and push; wait for review rather than
+   entering Phase 6.

@@ -19,3 +19,17 @@ DUFS listens on `0.0.0.0:5000` in the container while the host publishes
 exposure is deferred to later explicit deployment approval. Phase 4 adds a
 runtime-only admin secret structure; no authentication secret is stored in the
 source repository.
+
+## Phase 5 UI override
+
+Phase 5 adds `custom/assets/`, a complete, version-pinned copy of the official
+`assets/` directory from baseline commit `fe7fd56`. This is DUFS's documented
+`--assets` override mechanism: at runtime the Compose command passes
+`--assets /assets`, and the separate runtime directory mounts its `/assets`
+read-only. No Rust source, request routing, authentication, or WebDAV behavior
+is changed.
+
+The tracked copy deliberately keeps the same file names and plain HTML, CSS,
+and JavaScript structure as upstream. Reviewers can compare it directly with
+`git diff --no-index assets custom/assets`; later upstream updates should
+repeat that comparison before selectively rebasing UI changes.

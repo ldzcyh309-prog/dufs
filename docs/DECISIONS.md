@@ -24,3 +24,16 @@ Global permissions enable upload, delete, search, archive, and hash, but keep
 `allow-all` and symlink traversal false. Account and global permissions both
 apply, so neither alone grants an operation. No anonymous or guest rule is
 created.
+
+## D-004: UI V1 uses the official complete-assets override
+
+DUFS documents `--assets <directory>` as the supported way to override its
+built-in UI. Phase 5 therefore tracks a complete copy of upstream `assets/` at
+the baseline commit in `custom/assets/`, then makes the smallest possible
+HTML/CSS/JavaScript changes there. Compose supplies it as read-only `/assets`.
+
+This preserves the server-generated `__INDEX_DATA__` and
+`__ASSETS_PREFIX__` placeholders and the upstream interaction JavaScript. It
+does not alter Rust Core, HTTP access control, WebDAV methods, or the file API.
+The cost is that upstream asset changes require a deliberate file-by-file
+comparison; this is acceptable for V1 and is documented in Architecture.
