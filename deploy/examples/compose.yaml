@@ -1,0 +1,14 @@
+name: dufs
+
+services:
+  dufs:
+    image: ${DUFS_IMAGE:?Set DUFS_IMAGE in .env}
+    restart: ${DUFS_RESTART_POLICY:-unless-stopped}
+    ports:
+      - "${DUFS_HOST_IP:-127.0.0.1}:${DUFS_PORT:-5000}:5000"
+    volumes:
+      - "${DUFS_DATA_DIR:?Set DUFS_DATA_DIR}:/data"
+      - "${DUFS_CONFIG_DIR:?Set DUFS_CONFIG_DIR}:/config:ro"
+      - "${DUFS_ASSETS_DIR:?Set DUFS_ASSETS_DIR}:/assets:ro"
+      - "${DUFS_LOGS_DIR:?Set DUFS_LOGS_DIR}:/logs"
+    command: ["--config", "/config/config.yaml"]
