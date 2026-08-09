@@ -208,21 +208,6 @@ V1.0 冻结；升级必须新 branch、测试、image、acceptance、release，�
 ## Phase 17：最终验收与 10 分钟复核
 
 - [ ] amd64；image tag、OCI revision 正确
-- • 已完成 Phase 5.2 文档编写。h 
-   
-    \- 教程：docs/QNAP_NAS_DUFS_PRODUCTION_DEPLOYMENT_TUTORIAL.md 
-    \- 章节：Phase 0–17、ACL、镜像迁移、backup/restore、rollback、排障、重建与验收清单边 
-    \- 规模：223 行  
-    \- 更新：README.md、HANDOFF.md 交叉入口c 
-    \- 安全审计：git diff --check 通过；未引入真实密码、hash、.env 或 token 
-    \- Core/UI/image diff：未修改k 
-   
-    Git 提交受限：.git 当前为只读，无法创建 index.lock，因此未能 commit/push。验 
-   
-    本阶段未访问或修改 QNAP、xhydebian runtime，也未启停任何 production container。 
-
-   
-
 - [ ] compose config -q；UID:GID 1000:100；LAN bind 192.168.120.138:5100
 - [ ] health OK；未认证 401；认证/upload/download/UI/assets PASS
 - [ ] data ACL 四条硬边界 PASS；.env 0600；scripts 750
