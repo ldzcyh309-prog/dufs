@@ -3,6 +3,8 @@ name: dufs
 services:
   dufs:
     image: ${DUFS_IMAGE:?Set DUFS_IMAGE in .env}
+    # 以宿主机维护用户的 numeric UID/GID 运行，避免 bind mount 产生 root-owned 文件。
+    user: "${DUFS_UID:?Set DUFS_UID}:${DUFS_GID:?Set DUFS_GID}"
     restart: ${DUFS_RESTART_POLICY:-unless-stopped}
     ports:
       - "${DUFS_HOST_IP:-127.0.0.1}:${DUFS_PORT:-5000}:5000"

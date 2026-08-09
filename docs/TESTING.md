@@ -50,5 +50,27 @@ runtime，ENTRYPOINT 为 `["/bin/dufs"]`，OCI revision 精确为 `faca49a…`�
 | runtime `/assets:ro` override | UI、title、favicon、health、认证、浏览通过 |
 | 清理 | 临时容器、SHA-512 凭据与 `/tmp` 数据已删除 |
 
-runtime `.env` 已改为 `dufs:0.46.0-custom-v1-faca49a`；sentinel 与 0600
-权限保持不变。`docker compose config` 通过，未执行 `docker compose up`。
+runtime `.env` 已改为 `dufs:0.46.0-custom-v1-faca49a`；secret 不在本文记录，
+权限保持 0600。`docker compose config` 通过，production Compose 已运行。
+
+## Phase 7 non-root UID/GID
+
+生产 container 必须通过 `DUFS_UID`/`DUFS_GID` 以宿主机 `ldzcyh` numeric identity
+运行。重建后需检查 `Config.User`、health、loopback bind、只读 assets/config，
+并由 DUFS 创建专用测试文件后用宿主机 `stat` 确认 owner/group 与 `ldzcyh` 一致。
+
+## Phase 7 最终验收
+
+| 检查 | 结果 |
+| --- | --- |
+| running / image / `Config.User` | 通过；`dufs:0.46.0-custom-v1-faca49a`、`1000:1000` |
+| health / bind / restart policy | 通过；200、`127.0.0.1:5000`、`unless-stopped` |
+| authentication | 通过；unauthenticated/invalid 为 401，valid admin 为 200 |
+| UI / browse / upload/download / search | 通过；中文 title/favicon 保持 |
+| mkdir/delete / archive/hash / WebDAV | 通过；PROPFIND 为 207 |
+| symlink outside root | 通过阻断 |
+| restart / recreate persistence | 通过；测试数据保持并完成清理 |
+| ownership / mounts | 通过；新内容与 `ldzcyh` 一致，assets/config 为 ro |
+| logs / secret leak / network boundary | 通过；无凭据泄漏，IPv4-only |
+
+Phase 7 完成；Phase 8 尚未进入。

@@ -39,3 +39,14 @@ API 路径与 Docker 标签键保持官方英文名称。
 固定为 `faca49a59b6cfdf4a9331451355fc10e32a6f8b3`，tag 为
 `dufs:0.46.0-custom-v1-faca49a`。旧 `153a36f` 镜像保留作审计，但标记为
 superseded local candidate，Phase 7 不得引用它。
+
+## D-008：Phase 7 non-root UID/GID hardening
+
+首次生产验收发现默认 root container 在 bind-mounted data 中创建了 root-owned
+文件，造成宿主机 `ldzcyh` 无法进行 symlink 测试和 maintenance。这是
+Production bind-mount UID/GID mismatch，不是 DUFS regression。生产 Compose
+改用 runtime `DUFS_UID:DUFS_GID`，取宿主机 `ldzcyh` 的实际 numeric 值；不修改
+scratch 镜像，不使用 `chmod 777`，并保持 config/assets 只读挂载。
+
+Phase 7 最终验收确认该决策有效：DUFS 新建内容的 ownership 与宿主机
+`ldzcyh` numeric identity 一致，restart/recreate 后数据保持，宿主机维护路径可用。

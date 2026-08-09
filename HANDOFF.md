@@ -16,8 +16,8 @@ secret、用户数据、日志和备份绝不提交 Git。
 ## 完成状态与下一阶段
 
 Phase 0–6 已完成，Phase 6.1（镜像可追踪性与中文文档 closeout）已完成。
-当前停点为审核：下一阶段是 Phase 7 — Production Compose Deployment，但未经
-明确授权不得进入 Phase 7，且不得启动正式 production DUFS。
+Phase 7 已完成最终交互式验收与 non-root UID/GID hardening；当前停点为审核，
+尚未进入 Phase 8。
 
 ## Git 状态
 
@@ -56,11 +56,23 @@ Phase 2 baseline image `dufs:0.46.0-upstream-baseline-local` 也保留。
 ## runtime 与网络
 
 - runtime `DUFS_IMAGE`：`dufs:0.46.0-custom-v1-faca49a`。
-- `.env`：`ldzcyh:ldzcyh`、0600；最终 admin secret 未配置，仍为安全 sentinel。
-- 正式 production container：未启动。
-- `docker compose config`：通过；禁止执行 `docker compose up`。
+- `.env`：`ldzcyh:ldzcyh`、0600；admin secret 已配置但不在本文记录。
+- `DUFS_UID=1000`、`DUFS_GID=1000`，对应宿主机 `ldzcyh` 的实际 numeric UID/GID。
+- 正式 production container：运行中，`Config.User=1000:1000`。
+- `docker compose config`：通过；Phase 7 已仅对 `dufs` service recreate。
 - IPv4-only：container `0.0.0.0:5000`；host `127.0.0.1:5000`。
 - IPv6 明确禁用；Mihomo 未修改；其他 `dockerApps` 项目未修改。
+
+## Phase 7 non-root hardening checkpoint
+
+- 根因：首次验收发现默认 root container 创建了 root-owned acceptance data，记录为
+  `Production bind-mount UID/GID mismatch`，不是 DUFS regression。
+- 当前镜像仍为 `dufs:0.46.0-custom-v1-faca49a`；health 为 200；host bind 仍为
+  `127.0.0.1:5000`；restart policy 为 `unless-stopped`。
+- `/data`、`/logs` 可由 `1000:1000` 写入；`/config`、`/assets` 为只读挂载；历史
+  日志文件 owner 已修正为 `ldzcyh:ldzcyh`，未使用 `chmod 777`。
+- `.dufs-phase7-acceptance` 已通过 authenticated HTTP DELETE 清理；最终交互式验收
+  已通过，未记录任何密码或 hash。
 
 ## 安全策略
 
@@ -89,6 +101,6 @@ upstream baseline 文件，不作为项目自维护文档翻译。
 1. 先读本文件、两个项目控制文档和 `docs/IMAGE_BUILD.md`。
 2. 核验 `git status`、`git branch -vv`、`git log --oneline --decorate -8`。
 3. 核验 `docker image inspect dufs:0.46.0-custom-v1-faca49a`、runtime
-   `.env`、`docker compose config` 与 sentinel。
-4. 保持 IPv4-only，不启动 production Compose。仅在用户明确授权后进入
-   Phase 7。
+   `.env`、`DUFS_UID/DUFS_GID` 与 `docker compose config`。
+4. 保持 IPv4-only 与 non-root runtime；不要进入 Phase 8。
+5. Phase 7 已停止等待审核；下一独立阶段为 Phase 8 — Acceptance Tests，当前未进入。
