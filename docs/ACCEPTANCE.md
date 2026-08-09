@@ -3,7 +3,8 @@
 ## 验收环境
 
 - 验收日期：2026-08-09
-- Git：`custom/v1`，以本文件提交后的 `HEAD` 为准
+- Acceptance branch：`custom/v1`
+- Acceptance commit：`4cd4707190dca9a2f8fb0e4e22684bc402da79d0`
 - production image：`dufs:0.46.0-custom-v1-faca49a`
 - container：`dufs`，`Config.User=1000:1000`
 - 网络：host `127.0.0.1:5000`，container `0.0.0.0:5000`，IPv4-only

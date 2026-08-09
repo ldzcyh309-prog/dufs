@@ -30,3 +30,12 @@ docker build --platform linux/amd64 -f Dockerfile.custom \
 而添加 shell。Phase 2 baseline image 保留。旧
 `dufs:0.46.0-custom-v1-153a36f` 是 superseded local candidate，保留审计，
 Phase 7 不得引用。
+
+## Production V1.0 Release Provenance
+
+Production V1.0 的 Git release tag 是 `production-v1.0.0`，它指向 Phase 9 的
+documentation/release closeout commit。该 tag 不等同于 Docker image tag；已经完成
+Phase 8 acceptance 的 production image 仍从
+`faca49a59b6cfdf4a9331451355fc10e32a6f8b3` 构建，OCI revision 也继续为该真正的
+image source revision。Phase 9 未重建镜像，避免将未经验收的文档 commit 误称为 image
+provenance。

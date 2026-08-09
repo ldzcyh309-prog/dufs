@@ -64,3 +64,18 @@ Phase 7 最终验收确认该决策有效：DUFS 新建内容的 ownership 与�
 DUFS 通过 rendered HTML 的 `__ASSETS_PREFIX__` 动态提供 favicon、CSS、JS。验收脚本
 不得硬编码 `/favicon.svg` 或特定版本前缀；改为解析 HTML 并使用 `urljoin` 请求真实
 URL。该问题仅是验收脚本 bug，不修改 production UI、image 或 Rust。
+
+## D-011：Project Release Commit 与 Image Source Revision 分离
+
+production image 在 Phase 6.1 从
+`faca49a59b6cfdf4a9331451355fc10e32a6f8b3` 构建，并在 Phase 8 完成验收。Phase 9
+只修改 release/documentation，因此 `production-v1.0.0` 指向最终 project release
+commit，而 OCI revision 继续指向真正的 image source revision。不为 release metadata
+重建 image，保证 provenance 可追踪且不引入未验收 image。
+
+## D-012：完整 Production Disaster Restore 保持人工流程
+
+完整 production disaster restore 需要 staging、停机窗口、明确人工确认、恢复前备份和
+rollback plan，风险超出普通脚本自动化边界。默认 restore 保持 verify/list、隔离 restore
+与受控 selective production-path restore；完整流程作为运维 NOTE，不构成 release
+blocker。

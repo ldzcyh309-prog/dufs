@@ -1,5 +1,9 @@
 # DUFS Production 运维
 
+当前 Release 为 **DUFS Production V1.0**，Git tag 为 `production-v1.0.0`。Git release
+tag 表示项目文档封板，不等同于 Docker image tag；不得因为创建或检出 Git tag 自动替换
+production image。当前 production image 仍为 `dufs:0.46.0-custom-v1-faca49a`。
+
 ## 运行身份
 
 生产 container 不以 root 运行。runtime `.env` 的 `DUFS_UID` 与 `DUFS_GID`

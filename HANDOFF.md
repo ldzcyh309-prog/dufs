@@ -13,10 +13,20 @@
 Build in `~/aiDev/workspaces`；Run in `~/dockerApps`。runtime `.env`、真实
 secret、用户数据、日志和备份绝不提交 Git。
 
-## 完成状态与下一阶段
+## 完成状态与维护模式
 
-Phase 0–8 已完成。Phase 8.1 解决 restore blocker，Phase 8 Acceptance Verdict 为
-**PASS**；当前停点为审核，未经明确授权不得进入 Phase 9。
+Phase 0–9 已完成，DUFS Production V1.0 已发布，进入 **Production Maintenance Mode**。
+Phase 8.1 解决 restore blocker，Phase 8 Acceptance Verdict 为 **PASS**。未来 upstream
+sync、安全维护、新 feature branch 或 Production V1.1/V2 规划必须单独批准。
+
+## Release 身份
+
+- Release：`DUFS Production V1.0`（identifier：`1.0.0`）。
+- Git tag：`production-v1.0.0`（annotated，指向本次 Phase 9 release closeout commit）。
+- Release commit：由 `production-v1.0.0` 所指向；不在同一 commit 内自写 SHA，避免
+  self-referential commit loop。
+- Acceptance：**PASS**，commit
+  `4cd4707190dca9a2f8fb0e4e22684bc402da79d0`。
 
 ## Git 状态
 
@@ -24,7 +34,6 @@ Phase 0–8 已完成。Phase 8.1 解决 restore blocker，Phase 8 Acceptance Ve
 - 镜像 source commit / Phase 6 commit：
   `faca49a59b6cfdf4a9331451355fc10e32a6f8b3`
   （`build: add production custom image`）。
-- 本次 Phase 6.1 文档 closeout commit：提交后以 `git rev-parse HEAD` 为准。
 - upstream baseline tag：`v0.1.0-upstream-baseline`。
 - baseline commit：`fe7fd564f80dfbac361c8e0589c3845638149d38`。
 - `main` 与 `origin/main` 保持 baseline；不得在 `main` 开发。
@@ -127,5 +136,6 @@ upstream baseline 文件，不作为项目自维护文档翻译。
 2. 核验 `git status`、`git branch -vv`、`git log --oneline --decorate -8`。
 3. 核验 `docker image inspect dufs:0.46.0-custom-v1-faca49a`、runtime
    `.env`、`DUFS_UID/DUFS_GID` 与 `docker compose config`。
-4. 保持 IPv4-only 与 non-root runtime；Phase 8 已完成。
-5. 下一阶段为 Phase 9 — Release + Documentation；未经明确授权不得进入。
+4. 保持 IPv4-only 与 non-root runtime；Production V1.0 已发布。
+5. 仅在获得单独批准后处理 upstream sync、安全维护或新的 feature branch；不得直接
+   开始 V1.1、V2 或上游升级。

@@ -73,7 +73,8 @@ runtime `.env` 已改为 `dufs:0.46.0-custom-v1-faca49a`；secret 不在本文�
 | ownership / mounts | 通过；新内容与 `ldzcyh` 一致，assets/config 为 ro |
 | logs / secret leak / network boundary | 通过；无凭据泄漏，IPv4-only |
 
-Phase 7 完成；Phase 8 尚未进入。
+Phase 7 PASS。Phase 8.1 backup/restore 验证与 Phase 8 Production Acceptance 均已完成；
+Phase 8 verdict 为 **PASS**，详见 `docs/ACCEPTANCE.md`。
 
 ## Phase 8.1 — Safe Backup/Restore Enablement
 

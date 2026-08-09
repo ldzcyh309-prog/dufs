@@ -3,7 +3,7 @@
 runtime 目录固定为 `/home/ldzcyh/dockerApps/dufs`，包含 Compose、`.env`、
 config、assets、data、logs、backup 与项目脚本。源码仓库仅保存脱敏示例。
 
-## 当前部署前状态
+## 当前 Production 状态
 
 Phase 6.1 后，runtime `.env` 的 `DUFS_IMAGE` 为
 `dufs:0.46.0-custom-v1-faca49a`。宿主机发布保持
@@ -12,8 +12,8 @@ Phase 6.1 后，runtime `.env` 的 `DUFS_IMAGE` 为
 管理员 `DUFS_ADMIN_AUTH` 已由用户通过 runtime-only 交互式脚本配置；真实规则
 不写入本文。`doctor.sh` 和 `start.sh` 在 sentinel 存在时拒绝正式启动。
 
-Phase 7 已启动 production Compose；当前停在 non-root hardening 后的交互式验收
-checkpoint，尚未进入 Phase 8。
+Production V1.0 正在运行，Phase 8 Production Acceptance 为 **PASS**。当前 production
+container 为 non-root `1000:1000`，服务仅发布至 `127.0.0.1:5000`，并保持 IPv4-only。
 
 ## assets
 
@@ -34,4 +34,5 @@ bind-mounted data 出现 root-owned 文件，并保持宿主机维护路径一�
 最终交互式验收已通过：container running，`Config.User=1000:1000`，image 为
 `dufs:0.46.0-custom-v1-faca49a`，health 为 200，宿主机仅发布
 `127.0.0.1:5000`。认证、中文 UI、文件操作、WebDAV、symlink blocking、restart
-与 recreate persistence 均通过；验收目录已清理。Phase 8 尚未进入。
+与 recreate persistence 均通过；验收目录已清理。Phase 8 Production Acceptance 为
+**PASS**，详见 `docs/ACCEPTANCE.md`。
