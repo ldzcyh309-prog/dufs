@@ -12,7 +12,10 @@ The Git repository contains only sanitized deployment examples. The runtime
 directory is deliberately outside that repository so that production `.env`,
 secrets, data, logs, and backups cannot be committed accidentally.
 
-Phase 3 uses an explicit Compose project name, `dufs`. Its initial network
-baseline is IPv4 only: DUFS listens on `0.0.0.0:5000` in the container while
-the host publishes `127.0.0.1:5000`. Any broader exposure is deferred to the
-security and production-deployment phases.
+DUFS uses an explicit Compose project name, `dufs`. The xhydebian host, Mihomo
+transparent proxy, and household/lab network intentionally use IPv4 only:
+DUFS listens on `0.0.0.0:5000` in the container while the host publishes
+`127.0.0.1:5000`. IPv6 is disabled by production network policy. Any broader
+exposure is deferred to later explicit deployment approval. Phase 4 adds a
+runtime-only admin secret structure; no authentication secret is stored in the
+source repository.

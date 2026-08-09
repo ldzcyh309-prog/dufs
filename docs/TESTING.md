@@ -26,16 +26,19 @@ profile. The active default toolchain is `stable-x86_64-unknown-linux-gnu`.
 | Command | Result |
 | --- | --- |
 | `cargo fmt --check` | Pass |
-| `cargo test` | Baseline failure: 2 failures in `tests/bind.rs`; remaining executed tests passed |
+| `cargo test` | Expected IPv6 test incompatibility: 2 failures in `tests/bind.rs`; remaining executed tests passed |
 | `cargo clippy` | Pass with 3 warnings, no compilation error |
 | `cargo build --release` | Pass |
 
 `cargo test` failed only in `bind_ipv4_ipv6::case_1` and
 `bind_ipv4_ipv6::case_3`. The test process could not bind `::1` and reported
 `Cannot assign requested address (os error 99)`; the second failure timed out
-waiting for the same IPv6 listener. This is an execution-environment IPv6
-availability issue observed against unmodified upstream, not a custom
-regression. No upstream source was changed.
+waiting for the same IPv6 listener. The xhydebian host, Mihomo transparent
+proxy, and household/lab network intentionally use an IPv4-only policy, so
+these upstream IPv6-specific tests are expected to be incompatible with this
+production environment. This is not a DUFS regression, host-network fault, or
+production issue. IPv6 must not be enabled and upstream tests must not be
+modified merely to make this result green.
 
 `cargo clippy` completed successfully and reported three
 `clippy::useless_borrows_in_formatting` warnings in `src/args.rs` and
@@ -98,3 +101,29 @@ temporary data mount and `127.0.0.1:5000:5000` mapping.
 The temporary container was stopped and automatically removed. No Docker
 system, volume, or network cleanup was performed; the tagged baseline image
 is retained locally for traceability.
+
+## Phase 4 — Security configuration validation
+
+Phase 4 used the production security configuration with a temporary SHA-512
+crypt password and `--auth-method basic`, but supplied the temporary auth rule
+only to a process bound to `127.0.0.1`. No production Compose service was
+started and all temporary credentials, data, and logs were removed afterward.
+
+| Check | Result |
+| --- | --- |
+| Unauthenticated request | HTTP 401 |
+| Invalid credentials | HTTP 401 |
+| Valid temporary admin read | HTTP 200 |
+| Upload | HTTP 201 |
+| Download/read | HTTP 200 |
+| Search | HTTP 200 and expected result |
+| Archive | HTTP 200, `application/zip` |
+| Hash | HTTP 200 and SHA-256 matched |
+| Delete test file | HTTP 204; subsequent read HTTP 404 |
+| Symlink outside root | HTTP 404 |
+| Hidden `.git` search | HTTP 200 search response with no `.git` entry |
+| Health | HTTP 200, `{"status":"OK"}` |
+| Log secret check | Pass: no Authorization header or temporary password |
+
+The hidden-name test confirms DUFS's intended listing/search behavior; hidden
+names are not treated as a substitute for access control.

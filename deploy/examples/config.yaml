@@ -2,10 +2,18 @@ serve-path: /data
 bind: 0.0.0.0
 port: 5000
 allow-all: false
-allow-upload: false
-allow-delete: false
-allow-search: false
+allow-upload: true
+allow-delete: true
+allow-search: true
 allow-symlink: false
-allow-archive: false
-allow-hash: false
+allow-archive: true
+allow-hash: true
+hidden:
+  - .git
+  - .DS_Store
+  - Thumbs.db
+  - '*.tmp'
+  - '*.part'
+  - '*.lock'
+log-format: '$time_local $remote_addr $remote_user "$request" $status'
 log-file: /logs/dufs.log

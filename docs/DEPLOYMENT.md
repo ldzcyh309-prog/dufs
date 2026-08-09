@@ -11,8 +11,15 @@ start DUFS; production start is deferred until security configuration, custom
 image construction, and deployment approval are complete.
 
 The default host binding is `127.0.0.1:5000`. The container configuration uses
-IPv4 `0.0.0.0:5000`; V1 does not depend on IPv6 because the upstream baseline
-test environment cannot bind `::1`.
+IPv4 `0.0.0.0:5000`. IPv6 is disabled by the established production network
+policy for xhydebian, Mihomo transparent proxy, and the household/lab network.
+The upstream `::1` test incompatibility is therefore expected and is not a
+production defect to repair.
 
 Run `scripts/doctor.sh` from the runtime directory to inspect, but not repair,
 the project. Its Compose commands are scoped to project `dufs` only.
+
+Phase 4 adds the `DUFS_ADMIN_AUTH` runtime-only secret variable. It must be a
+SHA-512 crypt `admin:<hash>@/:rw` rule before deployment. The current sentinel
+placeholder deliberately causes `doctor.sh`/`start.sh` to reject a start until
+the user supplies that final secret.

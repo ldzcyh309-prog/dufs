@@ -11,4 +11,10 @@ services:
       - "${DUFS_CONFIG_DIR:?Set DUFS_CONFIG_DIR}:/config:ro"
       - "${DUFS_ASSETS_DIR:?Set DUFS_ASSETS_DIR}:/assets:ro"
       - "${DUFS_LOGS_DIR:?Set DUFS_LOGS_DIR}:/logs"
-    command: ["--config", "/config/config.yaml"]
+    command:
+      - --config
+      - /config/config.yaml
+      - --auth
+      - ${DUFS_ADMIN_AUTH:?Set DUFS_ADMIN_AUTH in .env}
+      - --auth-method
+      - basic

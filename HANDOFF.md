@@ -3,8 +3,8 @@
 ## Current state
 
 - Goal: maintainable DUFS Production V1.0 fork and Docker deployment.
-- Completed phase: Phase 3 — Production Skeleton.
-- Current phase: stopped after Phase 3 at the user's direction.
+- Completed phase: Phase 4 — Security Configuration.
+- Current phase: stopped after Phase 4 at the user's direction.
 - Source repository: `/home/ldzcyh/aiDev/workspaces/dufs`.
 - Production deployment path: `/home/ldzcyh/dockerApps/dufs` (skeleton created;
   no DUFS production service has been started).
@@ -33,9 +33,10 @@
 - Rust stable was installed with user-level rustup default profile; details are
   recorded in `docs/TESTING.md`.
 - `cargo fmt --check`, `cargo clippy`, and `cargo build --release` passed.
-- `cargo test` has two baseline IPv6 bind failures because this execution
-  environment cannot bind `::1` (`os error 99`). No upstream Rust code was
-  changed.
+- `cargo test` has two expected upstream IPv6-test incompatibilities because
+  the xhydebian/Mihomo/household-lab production policy intentionally disables
+  IPv6 and cannot bind `::1` (`os error 99`). This is not a DUFS regression,
+  host fault, or production issue; no upstream Rust code was changed.
 - The release binary (`dufs 0.46.0`) passed host HTTP, health, and static-file
   smoke tests on 127.0.0.1:5000.
 - Official Dockerfile baseline image:
@@ -45,7 +46,7 @@
 
 ## Next step
 
-When authorized, start Phase 4 — Security Configuration. Do not begin it
+When authorized, start Phase 5 — Custom UI V1. Do not begin it
 automatically.
 
 ## Phase 3 result
@@ -62,3 +63,18 @@ automatically.
 - `docker compose config`, script syntax validation, and read-only doctor
   passed. No DUFS production container was started and no other Docker project
   was changed.
+
+## Phase 4 result
+
+- Production network baseline is intentional IPv4-only: container
+  `0.0.0.0:5000`, safe host publish `127.0.0.1:5000`, and IPv6 disabled by
+  xhydebian/Mihomo/household-lab network policy. The Phase 2 `::1` failures
+  are expected upstream IPv6-test incompatibilities, not production issues.
+- One runtime-only SHA-512 Basic `admin` rule is required through `.env`; no
+  real password or hash is committed. The current placeholder blocks start
+  until the user supplies a final admin hash.
+- `allow-all` and symlink traversal remain false; upload, delete, search,
+  archive, and hash are globally enabled and constrained by admin `/:rw`.
+- Temporary loopback-only tests passed for authentication, upload/download,
+  search, archive, hash, delete, hidden search, symlink blocking, health, and
+  log secret hygiene. No production container was started.
