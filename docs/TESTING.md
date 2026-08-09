@@ -82,5 +82,7 @@ manifest、checksum、`--verify`、`--list` 与隔离 `--target` restore。恢�
 ownership 对齐 `DUFS_UID:GID`。额外测试确认 archive traversal、绝对路径、checksum
 损坏、非空 target 与危险 target 均被拒绝。对 `.dufs-phase8-acceptance` 的受控
 selective production-path restore 也验证了中文文件名、小型二进制文件、checksum 和
-`1000:1000` ownership；测试数据与 archive 均已清理。Phase 8 的 authenticated
-DUFS 可读性验收仍待继续执行。
+`1000:1000` ownership；测试数据与 archive 均已清理。Phase 8 authenticated
+DUFS 可读性验收已通过；动态 asset URL、文件兼容性、目录、搜索、ZIP/hash、WebDAV、
+ACL、symlink、hidden policy、persistence、日志与网络边界均通过。详见
+`docs/ACCEPTANCE.md`；完整 production disaster restore 为 NOTE，不构成 FAIL。

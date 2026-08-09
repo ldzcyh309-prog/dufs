@@ -36,3 +36,10 @@ scripts/restore.sh --production-path .dufs-phase8-acceptance --apply BACKUP
 
 完整 production restore 属于高风险人工运维，不由此脚本自动执行。应先创建新的备份，
 使用 staging 审核、明确确认，并保持旧数据可恢复；不得直接删除 production data。
+
+## 验收状态
+
+Phase 8 已通过 backup、manifest、checksum、verify/list、isolated restore 与 selective
+production-path restore；中文文件名、binary integrity、ownership 和 DUFS 重新读取
+恢复内容均通过。完整 production disaster restore 作为人工高风险流程保留，不是验收
+FAIL 条件。

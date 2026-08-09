@@ -58,3 +58,9 @@ Phase 7 最终验收确认该决策有效：DUFS 新建内容的 ownership 与�
 使用 `tar.gz`、manifest 和 SHA-256 checksum。restore 默认仅允许隔离空 target，
 按 runtime numeric UID/GID 对齐 ownership，并拒绝危险 archive member 与危险 target。
 只读/隔离恢复优先；完整 production restore 不作为自动化操作。
+
+## D-010：Phase 8 动态 asset URL 验收
+
+DUFS 通过 rendered HTML 的 `__ASSETS_PREFIX__` 动态提供 favicon、CSS、JS。验收脚本
+不得硬编码 `/favicon.svg` 或特定版本前缀；改为解析 HTML 并使用 `urljoin` 请求真实
+URL。该问题仅是验收脚本 bug，不修改 production UI、image 或 Rust。

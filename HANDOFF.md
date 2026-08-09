@@ -15,10 +15,8 @@ secret、用户数据、日志和备份绝不提交 Git。
 
 ## 完成状态与下一阶段
 
-Phase 0–6 已完成，Phase 6.1（镜像可追踪性与中文文档 closeout）已完成。
-Phase 7 已完成。Phase 8 曾因 restore 为 fail-safe placeholder 暂停；Phase 8.1
-已完成安全 backup/restore enablement，当前应恢复 Phase 8 Acceptance Tests，尚未
-进入 Phase 9。
+Phase 0–8 已完成。Phase 8.1 解决 restore blocker，Phase 8 Acceptance Verdict 为
+**PASS**；当前停点为审核，未经明确授权不得进入 Phase 9。
 
 ## Git 状态
 
@@ -86,7 +84,20 @@ Phase 2 baseline image `dufs:0.46.0-upstream-baseline-local` 也保留。
   link/special member、checksum 错误、非空/危险 target；按 `DUFS_UID/GID` 对齐。
 - Phase 8.1 隔离备份、checksum、list、verify、ownership、负面安全测试与受控
   selective production-path restore 均通过；中文文件名和小型二进制 integrity 已验证，
-  测试 archive/data 已清理。Phase 8 尚待通过 authenticated DUFS 进行完整黑盒验收。
+  测试 archive/data 已清理。Phase 8 authenticated 黑盒验收已通过，详见
+  `docs/ACCEPTANCE.md`。
+
+## Phase 8 closeout
+
+- 最终 production 状态：image `dufs:0.46.0-custom-v1-faca49a`，container running，
+  `Config.User=1000:1000`，host bind `127.0.0.1:5000`，IPv4-only。
+- 认证、中文 UI/mobile、动态 asset routing、文件兼容性、WebDAV、ACL、symlink、hidden
+  policy、non-root ownership、restart/recreate persistence、backup/restore 与日志安全均
+  通过。Phase 8 结论为 **PASS**。
+- 完整 production disaster restore 保持人工高风险运维流程，需要 staging、停机窗口和
+  明确确认；这是 NOTE，不是验收 blocker。
+- `phase8-acceptance.sh` 从 rendered HTML 动态解析 favicon、CSS、JS URL；此前
+  `/favicon.svg` 硬编码问题仅为验收脚本 bug，不是 UI regression。
 
 ## 安全策略
 
@@ -116,5 +127,5 @@ upstream baseline 文件，不作为项目自维护文档翻译。
 2. 核验 `git status`、`git branch -vv`、`git log --oneline --decorate -8`。
 3. 核验 `docker image inspect dufs:0.46.0-custom-v1-faca49a`、runtime
    `.env`、`DUFS_UID/DUFS_GID` 与 `docker compose config`。
-4. 保持 IPv4-only 与 non-root runtime；继续完成 Phase 8 Acceptance Tests。
-5. 不要进入 Phase 9，除非 Phase 8 全部验收通过并获得明确授权。
+4. 保持 IPv4-only 与 non-root runtime；Phase 8 已完成。
+5. 下一阶段为 Phase 9 — Release + Documentation；未经明确授权不得进入。

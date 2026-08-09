@@ -46,3 +46,6 @@ logs 或旧 backup，因此不会备份管理员认证规则。文件权限为 0
 空且非危险的隔离目录。恢复时 owner/group 对齐 runtime `DUFS_UID`/`DUFS_GID`。
 `--production-path RELATIVE --apply BACKUP` 仅恢复 data 内尚不存在的安全相对路径，
 不覆盖、不恢复 `.env`、不停止 container。完整 production restore 不在自动化范围内。
+
+Phase 8 已验证 selective restore 后 production DUFS 可读取恢复内容。完整 disaster
+restore 仍要求人工 staging、停机窗口与明确运维确认。
