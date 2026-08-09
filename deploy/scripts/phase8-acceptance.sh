@@ -15,26 +15,40 @@ read_runtime_uid_gid() {
   [[ $uid =~ ^[0-9]+$ && $gid =~ ^[0-9]+$ ]] || { printf 'DUFS_UID/GID 无效。\n' >&2; exit 65; }
   printf '%s:%s\n' "$uid" "$gid"
 }
+
+runtime_http_base_url() {
+  local host port
+  host=$(awk -F= '$1 == "DUFS_HOST_IP" {sub(/\r$/, "", $2); print $2; exit}' "$ROOT/.env")
+  port=$(awk -F= '$1 == "DUFS_PORT" {sub(/\r$/, "", $2); print $2; exit}' "$ROOT/.env")
+  [[ $host =~ ^[A-Za-z0-9.-]+$ ]] || { printf 'DUFS_HOST_IP 无效。\n' >&2; exit 65; }
+  [[ $port =~ ^[0-9]+$ ]] && (( port >= 1 && port <= 65535 )) || {
+    printf 'DUFS_PORT 必须是 1-65535 的数字。\n' >&2; exit 65;
+  }
+  [[ $host == 0.0.0.0 ]] && host=127.0.0.1
+  printf 'http://%s:%s\n' "$host" "$port"
+}
+
+BASE_URL=$(runtime_http_base_url)
 read -r -s -p '输入 DUFS 管理员密码以执行 Phase 8 验收：' password
 printf '\n'
 [[ -n $password ]] || { printf '密码不能为空。\n' >&2; exit 1; }
 
 run_http() {
   local action=$1
-  python3 - "$action" "$BASE" 3<<<"$password" <<'PY'
+  python3 - "$action" "$BASE" "$BASE_URL" 3<<<"$password" <<'PY'
 import base64, hashlib, io, os, sys, urllib.error, urllib.parse, urllib.request, zipfile
 from html.parser import HTMLParser
-action, base = sys.argv[1:3]
+action, base, base_url = sys.argv[1:4]
 password = os.fdopen(3, 'rb').read().rstrip(b'\n')
 token = base64.b64encode(b'admin:' + password).decode('ascii')
 
 def url(path):
-    parts = urllib.parse.urlsplit('http://127.0.0.1:5000' + path)
+    parts = urllib.parse.urlsplit(base_url + path)
     return urllib.parse.urlunsplit((parts.scheme, parts.netloc,
         urllib.parse.quote(parts.path, safe="/%:@-._~!$&'()*+,;="),
         urllib.parse.quote(parts.query, safe="%=&/:?@-._~!$'()*+,;"), parts.fragment))
 
-BASE_URL = 'http://127.0.0.1:5000/'
+BASE_URL = base_url + '/'
 
 def request_url(method, actual_url, expected, body=None, headers=None):
     h = {'Authorization': 'Basic ' + token}
@@ -151,13 +165,13 @@ done
 
 docker compose --project-name dufs --env-file "$ROOT/.env" -f "$ROOT/compose.yaml" restart
 sleep 2
-curl -fsS --max-time 10 http://127.0.0.1:5000/__dufs__/health >/dev/null
+curl -fsS --max-time 10 "$BASE_URL/__dufs__/health" >/dev/null
 run_http persist
 
 docker compose --project-name dufs --env-file "$ROOT/.env" -f "$ROOT/compose.yaml" down
 docker compose --project-name dufs --env-file "$ROOT/.env" -f "$ROOT/compose.yaml" up -d
-for _ in $(seq 1 15); do curl -fsS --max-time 3 http://127.0.0.1:5000/__dufs__/health >/dev/null && break; sleep 1; done
-curl -fsS --max-time 3 http://127.0.0.1:5000/__dufs__/health >/dev/null
+for _ in $(seq 1 15); do curl -fsS --max-time 3 "$BASE_URL/__dufs__/health" >/dev/null && break; sleep 1; done
+curl -fsS --max-time 3 "$BASE_URL/__dufs__/health" >/dev/null
 run_http persist
 
 ARCHIVE=$($ROOT/scripts/backup.sh --data-path "$BASE")

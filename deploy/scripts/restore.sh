@@ -37,6 +37,18 @@ runtime_uid_gid() {
   printf '%s:%s\n' "$uid" "$gid"
 }
 
+dangerous_target() {
+  local target=$1 ancestor=$ROOT
+  [[ $target == "$ROOT" || $target == "$ROOT/"* ||
+     $target == "$DATA_ROOT" || $target == "$DATA_ROOT/"* ]] && return 0
+  while :; do
+    [[ $target == "$ancestor" ]] && return 0
+    [[ $ancestor == / ]] && break
+    ancestor=$(dirname "$ancestor")
+  done
+  return 1
+}
+
 verify_archive() {
   local archive=$1 checksum="${1}.sha256"
   [[ -f $archive && -r $archive ]] || { printf '备份文件不存在或不可读。\n' >&2; return 66; }
@@ -87,10 +99,10 @@ target_restore() {
   local target=$1 archive=$2 resolved
   [[ ! -e $target || -d $target ]] || { printf 'target 必须是目录。\n' >&2; return 64; }
   resolved=$(realpath -m "$target")
-  case $resolved in
-    /|/home|/home/ldzcyh|/home/ldzcyh/dockerApps|"$ROOT"|"$DATA_ROOT")
-      printf 'target 是危险或 production 路径，已拒绝。\n' >&2; return 64 ;;
-  esac
+  if dangerous_target "$resolved"; then
+    printf 'target 是危险或 production 路径，已拒绝。\n' >&2
+    return 64
+  fi
   if [[ -e $resolved ]] && [[ -n $(find "$resolved" -mindepth 1 -maxdepth 1 -print -quit) ]]; then
     printf 'target 非空，已拒绝覆盖。\n' >&2; return 64
   fi

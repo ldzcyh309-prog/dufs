@@ -13,6 +13,20 @@ TEST_CONTENT='DUFS Phase 7 专用测试内容'
 MARKER_FILE="$ROOT/data/$TEST_DIR/.dufs-phase7-marker"
 CLEANUP_ONLY=${1:-}
 
+runtime_http_base_url() {
+  local host port
+  host=$(awk -F= '$1 == "DUFS_HOST_IP" {sub(/\r$/, "", $2); print $2; exit}' "$ENV_FILE")
+  port=$(awk -F= '$1 == "DUFS_PORT" {sub(/\r$/, "", $2); print $2; exit}' "$ENV_FILE")
+  [[ $host =~ ^[A-Za-z0-9.-]+$ ]] || { printf 'DUFS_HOST_IP 无效。\n' >&2; return 65; }
+  [[ $port =~ ^[0-9]+$ ]] && (( port >= 1 && port <= 65535 )) || {
+    printf 'DUFS_PORT 必须是 1-65535 的数字。\n' >&2; return 65;
+  }
+  [[ $host == 0.0.0.0 ]] && host=127.0.0.1
+  printf 'http://%s:%s\n' "$host" "$port"
+}
+
+BASE_URL=$(runtime_http_base_url)
+
 cleanup_test_data() {
   if [[ -d "$ROOT/data/$TEST_DIR" ]]; then
     if [[ -f $MARKER_FILE ]]; then
@@ -54,7 +68,7 @@ request() {
   local method=$1 path=$2 expected=$3 body=${4-}
   printf '%s' "$password" | python3 -c '
 import base64, hashlib, sys, urllib.error, urllib.parse, urllib.request
-method, path, expected, body = sys.argv[1:5]
+base_url, method, path, expected, body = sys.argv[1:6]
 password = sys.stdin.buffer.read()
 token = base64.b64encode(b"admin:" + password).decode("ascii")
 
@@ -68,7 +82,7 @@ def encode_url_path(url):
     ))
 
 request = urllib.request.Request(
-    encode_url_path("http://127.0.0.1:5000" + path),
+    encode_url_path(base_url + path),
     data=body.encode("utf-8") if method in ("PUT", "PATCH", "POST") else None,
     method=method,
     headers={"Authorization": "Basic " + token},
@@ -87,7 +101,7 @@ if path.endswith("上传下载验证.txt") and method == "GET" and payload.decod
 if path == "/" and "DUFS 文件空间" not in payload.decode("utf-8", "replace"):
     raise SystemExit("中文 UI 标题验证失败")
 print(f"ok: {method} {path} -> {status}")
-' "$method" "$path" "$expected" "$body"
+' "$BASE_URL" "$method" "$path" "$expected" "$body"
 }
 
 cleanup_test_data
@@ -117,16 +131,16 @@ rm "$ROOT/data/$TEST_DIR/外部符号链接"
 
 "${COMPOSE[@]}" restart
 sleep 2
-curl -fsS --max-time 10 http://127.0.0.1:5000/__dufs__/health >/dev/null
+curl -fsS --max-time 10 "$BASE_URL/__dufs__/health" >/dev/null
 request GET "/$TEST_FILE" 200 "$TEST_CONTENT"
 
 "${COMPOSE[@]}" down
 "${COMPOSE[@]}" up -d
 for _ in $(seq 1 15); do
-  if curl -fsS --max-time 3 http://127.0.0.1:5000/__dufs__/health >/dev/null; then break; fi
+  if curl -fsS --max-time 3 "$BASE_URL/__dufs__/health" >/dev/null; then break; fi
   sleep 1
 done
-curl -fsS --max-time 3 http://127.0.0.1:5000/__dufs__/health >/dev/null
+curl -fsS --max-time 3 "$BASE_URL/__dufs__/health" >/dev/null
 request GET "/$TEST_FILE" 200 "$TEST_CONTENT"
 request DELETE "/$TEST_FILE" 204
 request DELETE "/$TEST_DIR/.dufs-phase7-marker" 204

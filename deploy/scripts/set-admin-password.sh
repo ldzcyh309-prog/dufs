@@ -9,10 +9,12 @@ ENV_FILE="$ROOT/.env"
 DOCTOR="$ROOT/scripts/doctor.sh"
 COMPOSE=(docker compose --project-name dufs --env-file "$ENV_FILE" -f "$ROOT/compose.yaml")
 
-if [[ ! -f $ENV_FILE || ! -x $DOCTOR ]]; then
-  printf 'runtime 环境不完整：需要 %s 与 %s。\n' "$ENV_FILE" "$DOCTOR" >&2
+if [[ ! -f $ENV_FILE || ! -f $ROOT/compose.yaml ]]; then
+  printf 'runtime 环境不完整：需要 %s 与 %s。\n' "$ENV_FILE" "$ROOT/compose.yaml" >&2
   exit 1
 fi
+
+"${COMPOSE[@]}" config -q
 
 if ! command -v openssl >/dev/null || ! openssl passwd -help 2>&1 | grep -q -- '-stdin'; then
   printf '当前 OpenSSL 不支持所需的 passwd -stdin；拒绝使用不安全替代方式。\n' >&2
@@ -64,7 +66,10 @@ mv -f "$temporary_env" "$ENV_FILE"
 temporary_env=
 chmod 600 "$ENV_FILE"
 
+# doctor 是可选额外检查；runtime 不携带它也能安全执行 password 更新。
+if [[ -x $DOCTOR ]]; then
+  "$DOCTOR"
+fi
 # 仅输出验证结果，绝不输出认证规则或 hash。
-"$DOCTOR"
 "${COMPOSE[@]}" config -q
 printf '管理员认证规则已安全写入 runtime .env，并通过 preflight。\n'
