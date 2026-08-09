@@ -1,5 +1,7 @@
 # Dufs
 
+QNAP Production Deployment Tutorial: [docs/QNAP_NAS_DUFS_PRODUCTION_DEPLOYMENT_TUTORIAL.md](docs/QNAP_NAS_DUFS_PRODUCTION_DEPLOYMENT_TUTORIAL.md)
+
 [![CI](https://github.com/sigoden/dufs/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/dufs/actions/workflows/ci.yaml)
 [![Crates](https://img.shields.io/crates/v/dufs.svg)](https://crates.io/crates/dufs)
 [![Docker Pulls](https://img.shields.io/docker/pulls/sigoden/dufs)](https://hub.docker.com/r/sigoden/dufs)

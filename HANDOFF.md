@@ -2,6 +2,7 @@
 
 **下一次新会话：先读 `HANDOFF.md`。** 随后阅读
 [`docs/QNAP_PRODUCTION_CUTOVER_2026-08-09.md`](docs/QNAP_PRODUCTION_CUTOVER_2026-08-09.md)，它是当前生产状态的完整人工验收记录。
+完整 QNAP 重建 / 部署教程入口：[`docs/QNAP_NAS_DUFS_PRODUCTION_DEPLOYMENT_TUTORIAL.md`](docs/QNAP_NAS_DUFS_PRODUCTION_DEPLOYMENT_TUTORIAL.md)
 
 ## 当前状态
 
