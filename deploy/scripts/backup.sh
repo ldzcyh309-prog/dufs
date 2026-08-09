@@ -3,9 +3,11 @@
 set -Eeuo pipefail
 umask 077
 
-ROOT=/home/ldzcyh/dockerApps/dufs
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 BACKUP_DIR="$ROOT/backup"
-SOURCE_REPO=/home/ldzcyh/aiDev/workspaces/dufs
+# 可选：仅当运行环境同时保留了源码 Git 仓库时设置。
+SOURCE_REPO=${SOURCE_REPO:-}
 data_path=
 
 usage() {
@@ -19,6 +21,23 @@ EOF
 
 safe_relative_path() {
   [[ -n $1 && $1 != /* && $1 != . && $1 != .. && $1 != *'..'* && $1 != *$'\n'* ]]
+}
+
+read_env_value() {
+  awk -F= -v key="$1" '$1 == key {sub(/^[^=]*=/, ""); sub(/\r$/, ""); print; exit}' "$ROOT/.env"
+}
+
+source_revision() {
+  local image revision
+  if [[ -n $SOURCE_REPO && -d $SOURCE_REPO/.git ]]; then
+    git -C "$SOURCE_REPO" rev-parse HEAD 2>/dev/null && return
+  fi
+  image=$(read_env_value DUFS_IMAGE)
+  if [[ -n $image ]] && command -v docker >/dev/null 2>&1; then
+    revision=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$image" 2>/dev/null || true)
+    [[ -n $revision && $revision != '<no value>' ]] && { printf '%s\n' "$revision"; return; }
+  fi
+  printf 'unknown\n'
 }
 
 case ${1:-} in
@@ -49,8 +68,8 @@ temporary_archive="$BACKUP_DIR/.dufs-backup-${stamp}.tar.gz"
 temporary_checksum="$BACKUP_DIR/.dufs-backup-${stamp}.sha256"
 trap 'rm -rf -- "$stage" "$temporary_archive" "$temporary_checksum"' EXIT
 
-revision=$(git -C "$SOURCE_REPO" rev-parse HEAD 2>/dev/null || printf 'unknown')
-image=$(awk -F= '$1 == "DUFS_IMAGE" {print $2; exit}' "$ROOT/.env")
+revision=$(source_revision)
+image=$(read_env_value DUFS_IMAGE)
 components='compose.yaml,config,assets,data'
 data_member=data
 if [[ -n $data_path ]]; then

@@ -3,9 +3,9 @@
 set -Eeuo pipefail
 umask 077
 
-ROOT=/home/ldzcyh/dockerApps/dufs
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 DATA_ROOT="$ROOT/data"
-SOURCE_REPO=/home/ldzcyh/aiDev/workspaces/dufs
 
 usage() {
   cat <<'EOF'
@@ -24,6 +24,17 @@ EOF
 
 safe_relative_path() {
   [[ -n $1 && $1 != /* && $1 != . && $1 != .. && $1 != *'..'* && $1 != *$'\n'* ]]
+}
+
+runtime_uid_gid() {
+  local uid gid
+  uid=$(awk -F= '$1 == "DUFS_UID" {sub(/\r$/, "", $2); print $2; exit}' "$ROOT/.env")
+  gid=$(awk -F= '$1 == "DUFS_GID" {sub(/\r$/, "", $2); print $2; exit}' "$ROOT/.env")
+  [[ $uid =~ ^[0-9]+$ && $gid =~ ^[0-9]+$ ]] || {
+    printf 'DUFS_UID/GID 无效。\n' >&2
+    return 65
+  }
+  printf '%s:%s\n' "$uid" "$gid"
 }
 
 verify_archive() {
@@ -86,19 +97,22 @@ target_restore() {
   verify_archive "$archive"
   mkdir -p "$resolved"
   tar --no-same-owner --no-same-permissions -xzf "$archive" -C "$resolved"
-  local uid gid
-  uid=$(awk -F= '$1 == "DUFS_UID" {print $2; exit}' "$ROOT/.env")
-  gid=$(awk -F= '$1 == "DUFS_GID" {print $2; exit}' "$ROOT/.env")
-  [[ $uid =~ ^[0-9]+$ && $gid =~ ^[0-9]+$ ]] || { printf 'DUFS_UID/GID 无效。\n' >&2; return 65; }
+  local uid gid ownership
+  ownership=$(runtime_uid_gid) || return
+  uid=${ownership%:*}
+  gid=${ownership#*:}
   chown -R "$uid:$gid" "$resolved"
   chmod -R u+rwX,go-rwx "$resolved"
   printf '已安全恢复到隔离 target：%s\n' "$resolved"
 }
 
 production_path_restore() {
-  local relative=$1 archive=$2 staging source target
+  local relative=$1 archive=$2 staging source target ownership uid gid
   safe_relative_path "$relative" || { printf 'production path 必须是安全相对路径。\n' >&2; return 64; }
   target="$DATA_ROOT/$relative"
+  [[ $(realpath -m "$target") == "$DATA_ROOT/"* ]] || {
+    printf 'production path 超出 data 目录，已拒绝。\n' >&2; return 64;
+  }
   [[ ! -e $target ]] || { printf 'production target 已存在，拒绝覆盖。\n' >&2; return 64; }
   staging=$(mktemp -d /tmp/dufs-restore.XXXXXX)
   if ! target_restore "$staging" "$archive"; then
@@ -111,8 +125,36 @@ production_path_restore() {
     printf '备份不含请求的 data 路径。\n' >&2
     return 66
   fi
+  ownership=$(runtime_uid_gid) || { rm -rf -- "$staging"; return; }
+  uid=${ownership%:*}
+  gid=${ownership#*:}
+  # 新建目录由 data 父目录的 default ACL 继承。不得对 production data 递归 chmod/chown。
   mkdir -p -- "$(dirname "$target")"
-  mv "$source" "$target"
+  if [[ -f $source ]]; then
+    cp --no-preserve=mode,ownership -- "$source" "$target"
+    chown "$uid:$gid" "$target"
+  elif [[ -d $source ]]; then
+    mkdir -- "$target"
+    chown "$uid:$gid" "$target"
+    while IFS= read -r -d '' item; do
+      local destination=${item#"$source"/}
+      if [[ -d $item ]]; then
+        mkdir -- "$target/$destination"
+        chown "$uid:$gid" "$target/$destination"
+      elif [[ -f $item ]]; then
+        cp --no-preserve=mode,ownership -- "$item" "$target/$destination"
+        chown "$uid:$gid" "$target/$destination"
+      else
+        rm -rf -- "$staging"
+        printf '恢复源包含不安全成员，已拒绝。\n' >&2
+        return 65
+      fi
+    done < <(find -P "$source" -mindepth 1 -print0)
+  else
+    rm -rf -- "$staging"
+    printf '恢复源不是常规文件或目录，已拒绝。\n' >&2
+    return 65
+  fi
   rm -rf -- "$staging"
   printf '已恢复指定 production data 路径。\n'
 }

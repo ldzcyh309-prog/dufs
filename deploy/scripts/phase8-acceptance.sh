@@ -3,14 +3,18 @@
 set -Eeuo pipefail
 umask 077
 
-ROOT=/home/ldzcyh/dockerApps/dufs
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 BASE=.dufs-phase8-acceptance
 ARCHIVE=
 
-if [[ $(id -un) != ldzcyh ]]; then
-  printf '请以 ldzcyh 用户运行此脚本。\n' >&2
-  exit 1
-fi
+read_runtime_uid_gid() {
+  local uid gid
+  uid=$(awk -F= '$1 == "DUFS_UID" {sub(/\r$/, "", $2); print $2; exit}' "$ROOT/.env")
+  gid=$(awk -F= '$1 == "DUFS_GID" {sub(/\r$/, "", $2); print $2; exit}' "$ROOT/.env")
+  [[ $uid =~ ^[0-9]+$ && $gid =~ ^[0-9]+$ ]] || { printf 'DUFS_UID/GID 无效。\n' >&2; exit 65; }
+  printf '%s:%s\n' "$uid" "$gid"
+}
 read -r -s -p '输入 DUFS 管理员密码以执行 Phase 8 验收：' password
 printf '\n'
 [[ -n $password ]] || { printf '密码不能为空。\n' >&2; exit 1; }
@@ -140,8 +144,9 @@ ln -s /etc/passwd "$ROOT/data/$BASE/outside-link"
 run_http symlink
 rm -f -- "$ROOT/data/$BASE/outside-link"
 
+runtime_ownership=$(read_runtime_uid_gid)
 for path in "$ROOT/data/$BASE" "$ROOT/logs"; do
-  [[ $(stat -c '%u:%g' "$path") == 1000:1000 ]] || { printf 'ownership 验证失败。\n' >&2; exit 1; }
+  [[ $(stat -c '%u:%g' "$path") == "$runtime_ownership" ]] || { printf 'ownership 验证失败。\n' >&2; exit 1; }
 done
 
 docker compose --project-name dufs --env-file "$ROOT/.env" -f "$ROOT/compose.yaml" restart

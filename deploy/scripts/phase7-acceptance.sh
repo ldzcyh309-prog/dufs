@@ -3,7 +3,8 @@
 set -Eeuo pipefail
 umask 077
 
-ROOT=/home/ldzcyh/dockerApps/dufs
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 ENV_FILE="$ROOT/.env"
 COMPOSE=(docker compose --project-name dufs --env-file "$ENV_FILE" -f "$ROOT/compose.yaml")
 TEST_DIR=".dufs-phase7-acceptance"
@@ -39,11 +40,6 @@ on_exit() {
   unset password
   exit "$status"
 }
-
-if [[ $(id -un) != ldzcyh ]]; then
-  printf '请以 ldzcyh 用户运行此脚本。\n' >&2
-  exit 1
-fi
 
 read -r -s -p '输入 DUFS 管理员密码以执行 Phase 7 验收：' password
 printf '\n'

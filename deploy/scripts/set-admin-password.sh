@@ -3,15 +3,11 @@
 set -Eeuo pipefail
 umask 077
 
-ROOT=/home/ldzcyh/dockerApps/dufs
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 ENV_FILE="$ROOT/.env"
 DOCTOR="$ROOT/scripts/doctor.sh"
 COMPOSE=(docker compose --project-name dufs --env-file "$ENV_FILE" -f "$ROOT/compose.yaml")
-
-if [[ ${EUID} -ne $(id -u ldzcyh) ]] || [[ $(id -un) != ldzcyh ]]; then
-  printf '请以 ldzcyh 用户运行此脚本。\n' >&2
-  exit 1
-fi
 
 if [[ ! -f $ENV_FILE || ! -x $DOCTOR ]]; then
   printf 'runtime 环境不完整：需要 %s 与 %s。\n' "$ENV_FILE" "$DOCTOR" >&2
@@ -64,7 +60,6 @@ if [[ $found -ne 1 ]]; then
   exit 1
 fi
 
-chown ldzcyh:ldzcyh "$temporary_env"
 mv -f "$temporary_env" "$ENV_FILE"
 temporary_env=
 chmod 600 "$ENV_FILE"
