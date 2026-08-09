@@ -50,3 +50,11 @@ scratch 镜像，不使用 `chmod 777`，并保持 config/assets 只读挂载。
 
 Phase 7 最终验收确认该决策有效：DUFS 新建内容的 ownership 与宿主机
 `ldzcyh` numeric identity 一致，restart/recreate 后数据保持，宿主机维护路径可用。
+
+## D-009：安全隔离 Backup / Restore
+
+旧 backup 会包含 runtime `.env`，旧 restore 则主动返回 64，无法满足 Phase 8。
+新工作流默认备份 compose、config、assets 和 data，但排除 `.env`、logs、旧 backup；
+使用 `tar.gz`、manifest 和 SHA-256 checksum。restore 默认仅允许隔离空 target，
+按 runtime numeric UID/GID 对齐 ownership，并拒绝危险 archive member 与危险 target。
+只读/隔离恢复优先；完整 production restore 不作为自动化操作。

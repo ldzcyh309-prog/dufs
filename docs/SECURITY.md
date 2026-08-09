@@ -38,3 +38,11 @@ runtime `.env` 为 0600，`config/config.yaml` 为 0640；不得提交 runtime �
 Phase 7 最终验证确认：container 为 non-root，未认证与无效凭据返回 401，有效
 管理员认证通过；symlink outside root 被阻止，日志未发现 Authorization、密码或
 hash 泄漏。IPv4-only 保持，IPv6 未启用，Mihomo 未修改。
+
+## Backup / Restore 安全边界
+
+默认 backup 不包含 runtime `.env`，从而不保存管理员 SHA-512 crypt 规则。恢复前
+必须验证 checksum、manifest 与 archive member；拒绝绝对路径、`..` traversal、
+symlink/hardlink、device、FIFO 和未知顶层成员。普通恢复只允许显式的空隔离 target，
+并拒绝生产和危险路径；selective production restore 需要安全相对路径、`--apply`，
+且目标必须不存在。不会使用 `chmod 777`。

@@ -16,8 +16,9 @@ secret、用户数据、日志和备份绝不提交 Git。
 ## 完成状态与下一阶段
 
 Phase 0–6 已完成，Phase 6.1（镜像可追踪性与中文文档 closeout）已完成。
-Phase 7 已完成最终交互式验收与 non-root UID/GID hardening；当前停点为审核，
-尚未进入 Phase 8。
+Phase 7 已完成。Phase 8 曾因 restore 为 fail-safe placeholder 暂停；Phase 8.1
+已完成安全 backup/restore enablement，当前应恢复 Phase 8 Acceptance Tests，尚未
+进入 Phase 9。
 
 ## Git 状态
 
@@ -74,6 +75,19 @@ Phase 2 baseline image `dufs:0.46.0-upstream-baseline-local` 也保留。
 - `.dufs-phase7-acceptance` 已通过 authenticated HTTP DELETE 清理；最终交互式验收
   已通过，未记录任何密码或 hash。
 
+## Phase 8.1 — Safe Backup/Restore Enablement
+
+- `backup.sh` 与 `restore.sh` 的正式版本位于 `deploy/scripts/`，并同步到 runtime。
+- 默认 backup 为 0600 `tar.gz` + `manifest.txt` + SHA-256 sidecar，包含 compose、
+  config、assets、data，明确排除 runtime `.env`、logs 和旧 backup；不会保存 admin
+  hash。
+- restore 支持 `--verify`、`--list`、隔离 `--target`，以及严格限制的
+  `--production-path RELATIVE --apply`。默认拒绝；拒绝 traversal、绝对路径、
+  link/special member、checksum 错误、非空/危险 target；按 `DUFS_UID/GID` 对齐。
+- Phase 8.1 隔离备份、checksum、list、verify、ownership、负面安全测试与受控
+  selective production-path restore 均通过；中文文件名和小型二进制 integrity 已验证，
+  测试 archive/data 已清理。Phase 8 尚待通过 authenticated DUFS 进行完整黑盒验收。
+
 ## 安全策略
 
 `allow-all: false`；全局 upload、delete、search、archive、hash 为 true，
@@ -102,5 +116,5 @@ upstream baseline 文件，不作为项目自维护文档翻译。
 2. 核验 `git status`、`git branch -vv`、`git log --oneline --decorate -8`。
 3. 核验 `docker image inspect dufs:0.46.0-custom-v1-faca49a`、runtime
    `.env`、`DUFS_UID/DUFS_GID` 与 `docker compose config`。
-4. 保持 IPv4-only 与 non-root runtime；不要进入 Phase 8。
-5. Phase 7 已停止等待审核；下一独立阶段为 Phase 8 — Acceptance Tests，当前未进入。
+4. 保持 IPv4-only 与 non-root runtime；继续完成 Phase 8 Acceptance Tests。
+5. 不要进入 Phase 9，除非 Phase 8 全部验收通过并获得明确授权。

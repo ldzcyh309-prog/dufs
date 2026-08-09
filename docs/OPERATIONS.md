@@ -34,3 +34,15 @@ compose、`.env`、config、assets 与必要数据；回滚使用已验证的旧
 
 生产服务保持 IPv4-only，仅发布 `127.0.0.1:5000`；不开放 LAN、公网、IPv6、
 反向代理或公网域名。
+
+## Backup / Restore
+
+`scripts/backup.sh` 默认生成 `tar.gz`、同名 `.sha256` 和 archive 内
+`manifest.txt`，备份 compose、config、assets 与 data。默认不包含 runtime `.env`、
+logs 或旧 backup，因此不会备份管理员认证规则。文件权限为 0600。
+
+`scripts/restore.sh --verify BACKUP` 先校验 checksum 和 archive 安全性；
+`--list BACKUP` 列出已验证 archive；`--target DIRECTORY BACKUP` 只能恢复到显式、
+空且非危险的隔离目录。恢复时 owner/group 对齐 runtime `DUFS_UID`/`DUFS_GID`。
+`--production-path RELATIVE --apply BACKUP` 仅恢复 data 内尚不存在的安全相对路径，
+不覆盖、不恢复 `.env`、不停止 container。完整 production restore 不在自动化范围内。

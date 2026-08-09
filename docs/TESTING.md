@@ -74,3 +74,13 @@ runtime `.env` 已改为 `dufs:0.46.0-custom-v1-faca49a`；secret 不在本文�
 | logs / secret leak / network boundary | 通过；无凭据泄漏，IPv4-only |
 
 Phase 7 完成；Phase 8 尚未进入。
+
+## Phase 8.1 — Safe Backup/Restore Enablement
+
+新 backup/restore 脚本已通过 `bash -n`，并使用短期、无 `.env` 的测试 archive 验证
+manifest、checksum、`--verify`、`--list` 与隔离 `--target` restore。恢复后的结构和
+ownership 对齐 `DUFS_UID:GID`。额外测试确认 archive traversal、绝对路径、checksum
+损坏、非空 target 与危险 target 均被拒绝。对 `.dufs-phase8-acceptance` 的受控
+selective production-path restore 也验证了中文文件名、小型二进制文件、checksum 和
+`1000:1000` ownership；测试数据与 archive 均已清理。Phase 8 的 authenticated
+DUFS 可读性验收仍待继续执行。
