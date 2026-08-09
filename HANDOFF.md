@@ -14,9 +14,9 @@ production deployment for the household/lab environment. Build in
 - Phase 3 — Production Skeleton: complete.
 - Phase 4 — Security Configuration: complete.
 - Phase 5 — Custom UI V1: complete.
-- Current stop point: Phase 5 is complete. Do not start a production service.
-- Next stage: review/approval. Do not automatically enter Phase 6 — Custom
-  Image.
+- Phase 6 — Custom Image: complete.
+- 当前停点：Phase 6 已完成，等待审核；不得启动正式 production service。
+- 下一阶段：仅在明确授权后进入 Phase 7 — Production Compose Deployment。
 
 ## Git state
 
@@ -33,6 +33,34 @@ production deployment for the household/lab environment. Build in
   on `main`.
 - `custom/v1` now contains the Phase 5 official-assets UI override and
   supporting deployment/documentation changes. Rust Core remains unchanged.
+
+## Phase 6 镜像状态
+
+- Dockerfile：`/home/ldzcyh/aiDev/workspaces/dufs/Dockerfile.custom`；官方
+  `Dockerfile` 未修改。
+- 上游版本：`0.46.0`，来自 `Cargo.toml`；镜像构建修订为 Custom UI V1 提交
+  `153a36fee65515f9f2493c92b9578db12605aeb8`。
+- 不可变风格本地 tag：`dufs:0.46.0-custom-v1-153a36f`；便利 alias：
+  `dufs:0.46.0-custom-v1`。不会推送任何外部 registry。
+- 镜像 ID：`sha256:a9245966724483d5097530acbbff6f14ea5b77a4a2da0ccf93e06dd274c4431d`；
+  `linux/amd64`、scratch runtime、ENTRYPOINT `[/bin/dufs]`。
+- 最终镜像包含 `/bin/dufs` 和 `/assets/`。`/assets/` 从
+  `custom/assets/` 烘焙，运行时
+  `/home/ldzcyh/dockerApps/dufs/assets:/assets:ro` 可覆盖它。
+- OCI labels 已验证：title、version、revision、source、description。
+- 运行时 `.env` 的 `DUFS_IMAGE` 已更新为不可变风格 tag；管理员 sentinel
+  未修改，`.env` 仍为 0600。
+- 两组临时 IPv4 loopback 测试均通过：无外置挂载的 baked UI 与 runtime
+  assets override；认证、health、浏览、上传/下载、WebDAV PROPFIND、favicon
+  和 symlink blocking 均无回归。临时容器、凭据与数据已清除。
+- 正式 production container 仍未启动；不要自动进入 Phase 7。
+
+## 项目语言规范
+
+从 Phase 6 起，本项目新增或实际修改的自定义代码注释、运维脚本说明和项目
+文档正文统一使用中文。上游原始源码及其英文注释保持原样，避免制造无关的
+upstream diff。技术标识、协议名、配置键、API 路径、Docker 标签键和命令
+保持官方英文名称。
 
 After this closeout document is committed, use `git rev-parse HEAD` and
 `git status` as the authoritative current handoff state.
@@ -131,19 +159,16 @@ removed.
 - Do not create a production image, start production DUFS, or create a
   production tag before the corresponding later phases.
 
-## Next-session checklist: review before any Phase 6 decision
+## 下一会话清单：审核后再决定是否进入 Phase 7
 
 1. Read the two control documents in
    `/home/ldzcyh/aiDev/workspaces/dufs-project` and this `HANDOFF.md`.
 2. In the source repository, run read-only `git status`, `git branch -vv`,
    `git log --oneline --decorate -8`, and `git remote -v`; confirm `custom/v1`
    is clean and `main` remains the upstream baseline.
-3. Read `docs/ARCHITECTURE.md`, `docs/DEPLOYMENT.md`, `docs/SECURITY.md`,
-   `docs/TESTING.md`, and `docs/DECISIONS.md` before changing assets.
-4. Review `custom/assets/` against `assets/` with
-   `git diff --no-index assets custom/assets`; preserve DUFS core interactions,
-   Access Control, and WebDAV compatibility. Do not modify Rust unless the
-   documented Phase 10 conditions are met.
-5. Keep the IPv4-only policy and do not start production Compose. Phase 5 is
-   closed after its single-purpose commit and push; wait for review rather than
-   entering Phase 6.
+3. 阅读 `docs/IMAGE_BUILD.md`、`docs/ARCHITECTURE.md`、`docs/DEPLOYMENT.md`、
+   `docs/SECURITY.md`、`docs/TESTING.md` 与 `docs/DECISIONS.md`。
+4. 复核 `docker image inspect dufs:0.46.0-custom-v1-153a36f`、runtime
+   `.env` 的镜像引用和 `docker compose config`；不得修改管理员 sentinel。
+5. 保持 IPv4-only 策略，不启动 production Compose。Phase 6 已关闭，等待
+   审核；未经明确授权不得进入 Phase 7。

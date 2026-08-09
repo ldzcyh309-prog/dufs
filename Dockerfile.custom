@@ -1,0 +1,17 @@
+FROM --platform=linux/amd64 messense/rust-musl-cross:x86_64-musl AS builder
+WORKDIR /src
+COPY . .
+RUN cargo install --path . --root /out
+
+FROM scratch
+ARG IMAGE_VERSION
+ARG VCS_REF
+LABEL org.opencontainers.image.title="DUFS Production V1" \
+      org.opencontainers.image.version="${IMAGE_VERSION}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.source="https://github.com/ldzcyh309-prog/dufs" \
+      org.opencontainers.image.description="DUFS Production V1，自包含 Custom UI V1 的 amd64 镜像"
+COPY --from=builder /out/bin/dufs /bin/dufs
+COPY custom/assets/ /assets/
+STOPSIGNAL SIGINT
+ENTRYPOINT ["/bin/dufs"]

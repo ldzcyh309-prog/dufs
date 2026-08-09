@@ -32,3 +32,13 @@ read-only and passes `--assets /assets`. Before a future deployment or update,
 copy the reviewed tracked assets into that runtime directory, then use
 `docker compose config` to confirm the mount and command. Do not place secrets
 or user data in assets.
+
+## Phase 6 自定义镜像引用
+
+Phase 6 验证通过后，runtime `.env` 的 `DUFS_IMAGE` 更新为本地不可变风格标签
+`dufs:0.46.0-custom-v1-153a36f`。它不是 `latest`，且同时保留便利 alias
+`dufs:0.46.0-custom-v1`。`.env` 的管理员 sentinel、0600 权限、IPv4-only
+发布和其他变量均不变。
+
+本阶段只执行 `docker compose config` 静态验证，不执行 `docker compose up`。
+Phase 7 获得明确授权前，正式 DUFS 容器不得启动。

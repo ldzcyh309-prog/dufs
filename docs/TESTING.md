@@ -158,3 +158,28 @@ file-name ellipsis without a horizontal page overflow. On phone widths, file
 row actions wrap within their dedicated column so that all actions remain
 visible instead of overlapping the name; controls use 36×36 CSS-pixel tap
 targets.
+
+## Phase 6 — 自定义镜像验证
+
+镜像使用 `Dockerfile.custom` 在本机以 `linux/amd64` 构建。构建输入为
+`Cargo.toml` 的 `0.46.0` 与已验证的 Custom UI V1 提交
+`153a36fee65515f9f2493c92b9578db12605aeb8`。镜像标签为
+`dufs:0.46.0-custom-v1-153a36f`，便利 alias 为 `dufs:0.46.0-custom-v1`。
+
+最终镜像经 inspect 验证为 `linux/amd64` scratch runtime，ENTRYPOINT 为
+`["/bin/dufs"]`，并包含 OCI title、version、revision、source、description
+标签。`docker history --no-trunc` 显示最终层仅复制二进制和
+`custom/assets/`；没有 runtime `.env`、config、data、logs、backup、密码或
+token。使用临时 create/export 检查最终层，确认存在 `/bin/dufs` 和全部
+`/assets` 文件。
+
+| 检查 | 结果 |
+| --- | --- |
+| `dufs --version` / `--help` | 通过；版本 `0.46.0` |
+| baked assets，无外置挂载 | 中文 UI、`DUFS 文件空间`、SVG favicon、首页、health 均通过 |
+| 临时认证 | 未认证 401、错误凭据 401、有效临时 admin 200 |
+| baked 功能回归 | 上传 201、下载 200 且内容匹配、WebDAV `PROPFIND` 207 |
+| symlink 策略 | 指向 `/etc/passwd` 的测试链接返回 404 |
+| 外置 `/assets:ro` override | 首页、title、favicon、health、认证、浏览均通过 |
+| 临时资源清理 | 两个临时容器、临时 SHA-512 凭据、`/tmp` 测试数据均已删除 |
+| runtime `.env` | `DUFS_IMAGE` 已更新；sentinel 未修改；Compose 静态验证通过 |

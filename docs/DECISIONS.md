@@ -37,3 +37,17 @@ This preserves the server-generated `__INDEX_DATA__` and
 does not alter Rust Core, HTTP access control, WebDAV methods, or the file API.
 The cost is that upstream asset changes require a deliberate file-by-file
 comparison; this is acceptable for V1 and is documented in Architecture.
+
+## D-005：Phase 6 维持 scratch runtime 与 baked assets fallback
+
+Phase 6 使用独立的 `Dockerfile.custom`，不修改官方 `Dockerfile`。它基于
+官方 amd64 Rust musl 多阶段构建，最终保持 scratch runtime。镜像内的
+`/assets/` 来自 `custom/assets/`，保证没有外部挂载时仍可提供验证过的 UI；
+生产运行时的只读 `/assets` bind mount 则拥有覆盖优先级。config、`.env`、
+secret、data、logs 和 backup 不得进入镜像。
+
+## D-006：项目新增内容使用中文
+
+从 Phase 6 起，项目新增或实际修改的代码注释、运维脚本说明和项目文档正文
+统一使用中文。上游原始源码及其英文注释保持原样，避免无关 upstream diff。
+技术标识、协议名、配置键、API 路径、Docker 标签键与命令保留其官方英文形式。

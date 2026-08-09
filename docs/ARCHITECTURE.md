@@ -33,3 +33,10 @@ The tracked copy deliberately keeps the same file names and plain HTML, CSS,
 and JavaScript structure as upstream. Reviewers can compare it directly with
 `git diff --no-index assets custom/assets`; later upstream updates should
 repeat that comparison before selectively rebasing UI changes.
+
+## Phase 6 镜像边界
+
+`Dockerfile.custom` 使用 amd64 Rust musl builder 和 scratch runtime。最终层
+仅保留 `/bin/dufs`、`/assets/` 与 OCI 元数据；Custom UI V1 作为镜像内
+fallback，运行时 `/assets:ro` 挂载仍可覆盖它。runtime 配置、密钥、数据、
+日志与备份不属于 build context 或最终镜像。
