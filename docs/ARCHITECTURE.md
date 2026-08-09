@@ -1,42 +1,32 @@
-# Architecture
+# 架构
 
-DUFS Production V1.0 separates planning, building, and running.
+DUFS Production V1.0 将控制、构建与运行分离。
 
-| Location | Responsibility |
+| 位置 | 职责 |
 | --- | --- |
-| `/home/ldzcyh/aiDev/workspaces/dufs-project` | Project design and execution control documents |
-| `/home/ldzcyh/aiDev/workspaces/dufs` | Upstream Fork, custom branch, builds, tests, templates, and documentation |
-| `/home/ldzcyh/dockerApps/dufs` | Runtime Compose files, local environment, data, logs, backups, and scripts |
+| `/home/ldzcyh/aiDev/workspaces/dufs-project` | 项目设计与执行控制文档 |
+| `/home/ldzcyh/aiDev/workspaces/dufs` | Fork、Git、构建、测试、模板与文档 |
+| `/home/ldzcyh/dockerApps/dufs` | runtime Compose、`.env`、config、assets、data、logs 与 backup |
 
-The Git repository contains only sanitized deployment examples. The runtime
-directory is deliberately outside that repository so that production `.env`,
-secrets, data, logs, and backups cannot be committed accidentally.
+Git 仓库只保存脱敏模板；runtime `.env`、真实 secret、用户数据、日志和备份
+不得提交。Compose 项目名为 `dufs`。
 
-DUFS uses an explicit Compose project name, `dufs`. The xhydebian host, Mihomo
-transparent proxy, and household/lab network intentionally use IPv4 only:
-DUFS listens on `0.0.0.0:5000` in the container while the host publishes
-`127.0.0.1:5000`. IPv6 is disabled by production network policy. Any broader
-exposure is deferred to later explicit deployment approval. Phase 4 adds a
-runtime-only admin secret structure; no authentication secret is stored in the
-source repository.
+## 网络与安全边界
 
-## Phase 5 UI override
+生产策略为 IPv4-only：容器 `0.0.0.0:5000`，宿主机仅
+`127.0.0.1:5000`。IPv6 由家庭网络、主机和 Mihomo 策略禁用；不得因测试
+而启用它。
 
-Phase 5 adds `custom/assets/`, a complete, version-pinned copy of the official
-`assets/` directory from baseline commit `fe7fd56`. This is DUFS's documented
-`--assets` override mechanism: at runtime the Compose command passes
-`--assets /assets`, and the separate runtime directory mounts its `/assets`
-read-only. No Rust source, request routing, authentication, or WebDAV behavior
-is changed.
+## Custom UI V1
 
-The tracked copy deliberately keeps the same file names and plain HTML, CSS,
-and JavaScript structure as upstream. Reviewers can compare it directly with
-`git diff --no-index assets custom/assets`; later upstream updates should
-repeat that comparison before selectively rebasing UI changes.
+`custom/assets/` 是基线提交 `fe7fd56` 官方 `assets/` 的完整可比较副本。
+Compose 传入 `--assets /assets`，runtime 以只读 `/assets` 挂载。UI 不修改
+Rust、认证、HTTP 路由或 WebDAV；升级时使用
+`git diff --no-index assets custom/assets` 审查差异。
 
-## Phase 6 镜像边界
+## Custom Image
 
-`Dockerfile.custom` 使用 amd64 Rust musl builder 和 scratch runtime。最终层
-仅保留 `/bin/dufs`、`/assets/` 与 OCI 元数据；Custom UI V1 作为镜像内
-fallback，运行时 `/assets:ro` 挂载仍可覆盖它。runtime 配置、密钥、数据、
-日志与备份不属于 build context 或最终镜像。
+`Dockerfile.custom` 保留官方 amd64 Rust musl 多阶段构建与 scratch runtime。
+最终层只有 `/bin/dufs`、`/assets/` 和 OCI metadata。镜像内 assets 是
+fallback；runtime `/assets:ro` bind mount 可覆盖它。runtime config、`.env`、
+secret、data、logs 和 backup 不进入 build context 或最终镜像。

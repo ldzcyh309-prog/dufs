@@ -1,53 +1,41 @@
-# Decisions
+# 决策记录
 
-## D-001: Intentional IPv4-only V1 runtime baseline
+## D-001：IPv4-only runtime
 
-The household/lab network, xhydebian host, and Mihomo transparent proxy
-intentionally disable IPv6. DUFS Production V1 therefore uses container IPv4
-`0.0.0.0:5000` and loopback host publishing `127.0.0.1:5000` only. The Phase 2
-upstream tests that require `::1` are expected to be incompatible with this
-policy; they are neither a DUFS regression nor a host fault. Do not enable
-IPv6 or modify upstream tests merely to change this result.
+家庭网络、xhydebian 与 Mihomo 禁用 IPv6。因此 DUFS 使用容器
+`0.0.0.0:5000` 与宿主机 `127.0.0.1:5000`。依赖 `::1` 的 upstream 测试失败
+属于预期环境差异，不启用 IPv6，也不修改 upstream 测试。
 
-## D-002: No service start in Phase 3
+## D-002：生产启动延后
 
-Phase 3 creates an inspectable production skeleton without starting a service.
-Access control has no real credentials yet and is deferred to Phase 4. The
-Phase 2 baseline image reference exists only to validate Compose interpolation;
-the final custom production image is deferred to Phase 6.
+Phase 3 仅建立 skeleton。Phase 7 明确获批前不得启动正式 Compose。
 
-## D-003: SHA-512 Basic admin authentication with least privilege
+## D-003：最小权限 SHA-512 Basic 认证
 
-V1 has one `admin` account with `/:rw`, supplied only through runtime `.env`
-as a SHA-512 crypt hash. DUFS uses Basic authentication for hashed passwords.
-Global permissions enable upload, delete, search, archive, and hash, but keep
-`allow-all` and symlink traversal false. Account and global permissions both
-apply, so neither alone grants an operation. No anonymous or guest rule is
-created.
+`admin` 使用 runtime-only SHA-512 crypt hash 和 `/:rw`；`allow-all` 为 false，
+symlink 为 false。无匿名或 guest。
 
-## D-004: UI V1 uses the official complete-assets override
+## D-004：官方 complete-assets override
 
-DUFS documents `--assets <directory>` as the supported way to override its
-built-in UI. Phase 5 therefore tracks a complete copy of upstream `assets/` at
-the baseline commit in `custom/assets/`, then makes the smallest possible
-HTML/CSS/JavaScript changes there. Compose supplies it as read-only `/assets`.
+Custom UI V1 使用官方 `--assets` 机制。`custom/assets/` 保留完整上游结构，
+保持 `__INDEX_DATA__`、`__ASSETS_PREFIX__` 与原生交互逻辑；不修改 Rust、
+Access Control、WebDAV 或文件 API。
 
-This preserves the server-generated `__INDEX_DATA__` and
-`__ASSETS_PREFIX__` placeholders and the upstream interaction JavaScript. It
-does not alter Rust Core, HTTP access control, WebDAV methods, or the file API.
-The cost is that upstream asset changes require a deliberate file-by-file
-comparison; this is acceptable for V1 and is documented in Architecture.
+## D-005：scratch runtime 与 baked assets fallback
 
-## D-005：Phase 6 维持 scratch runtime 与 baked assets fallback
+`Dockerfile.custom` 不修改官方 Dockerfile，使用 amd64 Rust musl builder 与
+scratch runtime。`/assets/` 从 `custom/assets/` 烘焙，runtime 只读 assets
+挂载拥有覆盖优先级。config、`.env`、secret、data、logs 与 backup 不进镜像。
 
-Phase 6 使用独立的 `Dockerfile.custom`，不修改官方 `Dockerfile`。它基于
-官方 amd64 Rust musl 多阶段构建，最终保持 scratch runtime。镜像内的
-`/assets/` 来自 `custom/assets/`，保证没有外部挂载时仍可提供验证过的 UI；
-生产运行时的只读 `/assets` bind mount 则拥有覆盖优先级。config、`.env`、
-secret、data、logs 和 backup 不得进入镜像。
+## D-006：中文规范
 
-## D-006：项目新增内容使用中文
+项目新增或实际修改的自定义代码注释、运维脚本说明和自行维护文档使用中文。
+上游源码及其英文注释保持原样；Git、Docker、WebDAV、配置键、协议名、
+API 路径与 Docker 标签键保持官方英文名称。
 
-从 Phase 6 起，项目新增或实际修改的代码注释、运维脚本说明和项目文档正文
-统一使用中文。上游原始源码及其英文注释保持原样，避免无关 upstream diff。
-技术标识、协议名、配置键、API 路径、Docker 标签键与命令保留其官方英文形式。
+## D-007：Phase 6.1 镜像修订可追踪性
+
+镜像必须从已提交的完整构建状态生成。Phase 6.1 将 image source revision
+固定为 `faca49a59b6cfdf4a9331451355fc10e32a6f8b3`，tag 为
+`dufs:0.46.0-custom-v1-faca49a`。旧 `153a36f` 镜像保留作审计，但标记为
+superseded local candidate，Phase 7 不得引用它。

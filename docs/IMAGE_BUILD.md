@@ -1,46 +1,32 @@
-# Phase 6 自定义镜像构建
+# 自定义镜像构建
 
-## 设计
+`Dockerfile.custom` 保留官方 amd64 Rust musl 多阶段构建和 scratch runtime。
+最终层只包含 `/bin/dufs`、`/assets/` 与 OCI metadata；不会复制 runtime
+`.env`、config、data、logs、backup 或凭据。
 
-`Dockerfile.custom` 保留官方 Dockerfile 的 amd64 Rust musl 多阶段构建和
-scratch 运行时思路。最终镜像只包含 `/bin/dufs`、`/assets/` 和 OCI 元数据；
-不会复制 runtime `.env`、config、data、logs、backup 或任何凭据。
+`/assets/` 来自 `custom/assets/`，可在没有宿主机挂载时提供 Custom UI V1。
+生产 runtime 的 `/home/ldzcyh/dockerApps/dufs/assets:/assets:ro` 可覆盖它，
+Compose 使用 `--assets /assets`。
 
-`/assets/` 来自仓库中经过 Phase 5 验证的 `custom/assets/`。因此镜像在没有
-宿主机挂载时也能提供 Custom UI V1。生产 Compose 仍会以只读
-`/home/ldzcyh/dockerApps/dufs/assets:/assets:ro` 挂载覆盖该目录，并使用
-`--assets /assets`；这提供了可审查的运行时覆盖与镜像内 fallback。
+## Phase 6.1 已验证构建
 
-## 构建范围与标签
-
-Phase 6 仅验证当前生产主机所需的 `linux/amd64`。上游版本由
-`Cargo.toml` 读取；不可变风格标签使用 Custom UI 已验证提交的短 SHA：
+镜像从已提交构建状态 `faca49a59b6cfdf4a9331451355fc10e32a6f8b3` 生成：
 
 ```bash
 docker build --platform linux/amd64 -f Dockerfile.custom \
-  --build-arg IMAGE_VERSION=0.46.0-custom-v1-<git-short-sha> \
-  --build-arg VCS_REF=<git-full-sha> \
-  -t dufs:0.46.0-custom-v1-<git-short-sha> \
+  --build-arg IMAGE_VERSION=0.46.0-custom-v1-faca49a \
+  --build-arg VCS_REF=faca49a59b6cfdf4a9331451355fc10e32a6f8b3 \
+  -t dufs:0.46.0-custom-v1-faca49a \
   -t dufs:0.46.0-custom-v1 .
 ```
 
-不会使用 `latest`，也不会推送 Docker Hub、GHCR 或其他外部 registry。
-`dufs:0.46.0-custom-v1` 仅是指向已验证不可变风格本地镜像的便利 alias。
+不可变风格 tag 为 `dufs:0.46.0-custom-v1-faca49a`；alias 仅用于本地
+便利引用，不使用 `latest`，也不推送外部 registry。OCI labels 包含
+`org.opencontainers.image.title`、`version`、`revision`、`source`、
+`description`，且不得包含 secret。
 
-## OCI 元数据与核验
-
-镜像包含 `org.opencontainers.image.title`、`version`、`revision`、`source`
-和 `description`。`revision` 来自实际 Git SHA，不能包含密码、token 或其他
-敏感信息。使用以下方式核验，而不向 scratch 镜像加入 shell：
-
-```bash
-docker image inspect dufs:0.46.0-custom-v1
-docker history --no-trunc dufs:0.46.0-custom-v1
-docker create --name dufs-phase6-inspect dufs:0.46.0-custom-v1
-docker export dufs-phase6-inspect | tar -tf - | grep '^assets/'
-docker rm dufs-phase6-inspect
-```
-
-Phase 2 的 `dufs:0.46.0-upstream-baseline-local` 是可追踪 baseline，Phase 6
-不删除它。Phase 7 如需回滚镜像引用，应先停止并审查项目自己的 Compose 状态，
-再将 `DUFS_IMAGE` 指回已验证标签；不执行 Docker 全局清理。
+使用 `docker image inspect`、`docker history --no-trunc` 与临时
+`docker create`/`docker export` 验证镜像；不得为了检查 scratch runtime
+而添加 shell。Phase 2 baseline image 保留。旧
+`dufs:0.46.0-custom-v1-153a36f` 是 superseded local candidate，保留审计，
+Phase 7 不得引用。
