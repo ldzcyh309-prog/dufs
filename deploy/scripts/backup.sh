@@ -27,14 +27,25 @@ read_env_value() {
   awk -F= -v key="$1" '$1 == key {sub(/^[^=]*=/, ""); sub(/\r$/, ""); print; exit}' "$ROOT/.env"
 }
 
+resolve_docker_optional() {
+  local candidate
+  if [[ -n ${DOCKER_BIN:-} ]]; then
+    candidate=$DOCKER_BIN
+  else
+    candidate=$(command -v docker 2>/dev/null || true)
+  fi
+  [[ -n $candidate && -x $candidate ]] || return 1
+  DOCKER_BIN=$candidate
+}
+
 source_revision() {
   local image revision
   if [[ -n $SOURCE_REPO && -d $SOURCE_REPO/.git ]]; then
     git -C "$SOURCE_REPO" rev-parse HEAD 2>/dev/null && return
   fi
   image=$(read_env_value DUFS_IMAGE)
-  if [[ -n $image ]] && command -v docker >/dev/null 2>&1; then
-    revision=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$image" 2>/dev/null || true)
+  if [[ -n $image ]] && resolve_docker_optional; then
+    revision=$("$DOCKER_BIN" image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$image" 2>/dev/null || true)
     [[ -n $revision && $revision != '<no value>' ]] && { printf '%s\n' "$revision"; return; }
   fi
   printf 'unknown\n'

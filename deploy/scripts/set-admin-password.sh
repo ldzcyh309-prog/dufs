@@ -7,12 +7,28 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 ENV_FILE="$ROOT/.env"
 DOCTOR="$ROOT/scripts/doctor.sh"
-COMPOSE=(docker compose --project-name dufs --env-file "$ENV_FILE" -f "$ROOT/compose.yaml")
+
+resolve_docker() {
+  local candidate
+  if [[ -n ${DOCKER_BIN:-} ]]; then
+    candidate=$DOCKER_BIN
+  else
+    candidate=$(command -v docker 2>/dev/null || true)
+  fi
+  if [[ -z $candidate || ! -x $candidate ]]; then
+    printf '未找到可执行 Docker；请设置 DOCKER_BIN 或在包含 docker 的运行环境中执行。\n' >&2
+    return 69
+  fi
+  DOCKER_BIN=$candidate
+}
 
 if [[ ! -f $ENV_FILE || ! -f $ROOT/compose.yaml ]]; then
   printf 'runtime 环境不完整：需要 %s 与 %s。\n' "$ENV_FILE" "$ROOT/compose.yaml" >&2
   exit 1
 fi
+
+resolve_docker
+COMPOSE=("$DOCKER_BIN" compose --project-name dufs --env-file "$ENV_FILE" -f "$ROOT/compose.yaml")
 
 "${COMPOSE[@]}" config -q
 

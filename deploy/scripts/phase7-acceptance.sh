@@ -6,12 +6,27 @@ umask 077
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 ENV_FILE="$ROOT/.env"
-COMPOSE=(docker compose --project-name dufs --env-file "$ENV_FILE" -f "$ROOT/compose.yaml")
 TEST_DIR=".dufs-phase7-acceptance"
 TEST_FILE="$TEST_DIR/上传下载验证.txt"
 TEST_CONTENT='DUFS Phase 7 专用测试内容'
 MARKER_FILE="$ROOT/data/$TEST_DIR/.dufs-phase7-marker"
 CLEANUP_ONLY=${1:-}
+
+resolve_python() {
+  local candidate
+  if [[ -n ${PYTHON_BIN:-} ]]; then candidate=$PYTHON_BIN; else candidate=$(command -v python3 2>/dev/null || command -v python 2>/dev/null || true); fi
+  if [[ -z $candidate || ! -x $candidate ]] || ! "$candidate" -c 'import base64, hashlib, urllib.request' >/dev/null 2>&1; then
+    printf 'Phase 7 需要 Python；当前 host 未提供；未修改 production。\n' >&2; return 69
+  fi
+  PYTHON_BIN=$candidate
+}
+
+resolve_docker() {
+  local candidate
+  if [[ -n ${DOCKER_BIN:-} ]]; then candidate=$DOCKER_BIN; else candidate=$(command -v docker 2>/dev/null || true); fi
+  if [[ -z $candidate || ! -x $candidate ]]; then printf '未找到可执行 Docker；请设置 DOCKER_BIN 或在包含 docker 的运行环境中执行。\n' >&2; return 69; fi
+  DOCKER_BIN=$candidate
+}
 
 runtime_http_base_url() {
   local host port
@@ -26,6 +41,9 @@ runtime_http_base_url() {
 }
 
 BASE_URL=$(runtime_http_base_url)
+resolve_python
+resolve_docker
+COMPOSE=("$DOCKER_BIN" compose --project-name dufs --env-file "$ENV_FILE" -f "$ROOT/compose.yaml")
 
 cleanup_test_data() {
   if [[ -d "$ROOT/data/$TEST_DIR" ]]; then
@@ -66,7 +84,7 @@ trap on_exit EXIT
 # 密码经 stdin 进入 Python；不会出现在 shell history、命令参数或临时文件中。
 request() {
   local method=$1 path=$2 expected=$3 body=${4-}
-  printf '%s' "$password" | python3 -c '
+  printf '%s' "$password" | "$PYTHON_BIN" -c '
 import base64, hashlib, sys, urllib.error, urllib.parse, urllib.request
 base_url, method, path, expected, body = sys.argv[1:6]
 password = sys.stdin.buffer.read()

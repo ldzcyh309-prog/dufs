@@ -29,3 +29,13 @@ default:other::---
 QNAP 使用 ACL 继承。portable scripts 不负责修改 QNAP 全局 ACL、共享目录设置或整个 `/share/Container` 的权限。尤其不得对 production data 运行递归 `chmod` 或 `chown`，不得使用 `chmod 777`、`setfacl -b` 或 `setfacl -k`。
 
 生产 selective restore 只可恢复 data 中不存在的安全相对路径，绝不覆盖已有文件；新建项继承 data 的既有默认 ACL。完整 disaster restore 必须由人工执行，不能自动化。
+
+## Host compatibility
+
+人工只读检查确认，QNAP host 使用 GNU bash `3.2.57`；当前没有 `python3`，也没有 `realpath`。OpenSSL 为 `3.0.9`，`/bin/sha256sum`、`/bin/tar`、`/usr/bin/find` 可用，且 `cp` 支持 `--no-preserve=ATTR_LIST`。脚本保持 Bash 3.2 兼容，不依赖 host `realpath`。
+
+- `backup.sh` 可原生运行：即使 Docker、Python 或 realpath 不可用，仍可生成 archive、manifest 与 checksum。无法取得 OCI revision 时记录 `unknown`。
+- `set-admin-password.sh` 及高级验收脚本需要 Docker command resolution：优先使用可执行的 `DOCKER_BIN`，否则使用 `command -v docker`；不会猜测 QNAP 安装路径、修改 PATH 或修改 Container Station。
+- `restore.sh`、`phase7-acceptance.sh`、`phase8-acceptance.sh` 需要安全 Python：优先 `PYTHON_BIN`，其次 `python3`、`python`，并验证所需标准库。没有可用解释器时它们 fail closed，不会修改数据或 production。
+
+QNAP 当前缺 Python 时，restore 被明确拒绝是设计行为，不代表 DUFS 服务故障。部署脚本不建议也不自动安装 Python、拉取 Python image，或修改 NAS 系统 Python/PATH。

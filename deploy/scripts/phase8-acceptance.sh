@@ -8,6 +8,22 @@ ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 BASE=.dufs-phase8-acceptance
 ARCHIVE=
 
+resolve_python() {
+  local candidate
+  if [[ -n ${PYTHON_BIN:-} ]]; then candidate=$PYTHON_BIN; else candidate=$(command -v python3 2>/dev/null || command -v python 2>/dev/null || true); fi
+  if [[ -z $candidate || ! -x $candidate ]] || ! "$candidate" -c 'import base64, hashlib, urllib.request, zipfile' >/dev/null 2>&1; then
+    printf 'Phase 8 需要 Python；当前 host 未提供；未修改 production。\n' >&2; return 69
+  fi
+  PYTHON_BIN=$candidate
+}
+
+resolve_docker() {
+  local candidate
+  if [[ -n ${DOCKER_BIN:-} ]]; then candidate=$DOCKER_BIN; else candidate=$(command -v docker 2>/dev/null || true); fi
+  if [[ -z $candidate || ! -x $candidate ]]; then printf '未找到可执行 Docker；请设置 DOCKER_BIN 或在包含 docker 的运行环境中执行。\n' >&2; return 69; fi
+  DOCKER_BIN=$candidate
+}
+
 read_runtime_uid_gid() {
   local uid gid
   uid=$(awk -F= '$1 == "DUFS_UID" {sub(/\r$/, "", $2); print $2; exit}' "$ROOT/.env")
@@ -29,13 +45,16 @@ runtime_http_base_url() {
 }
 
 BASE_URL=$(runtime_http_base_url)
+resolve_python
+resolve_docker
+COMPOSE=("$DOCKER_BIN" compose --project-name dufs --env-file "$ROOT/.env" -f "$ROOT/compose.yaml")
 read -r -s -p '输入 DUFS 管理员密码以执行 Phase 8 验收：' password
 printf '\n'
 [[ -n $password ]] || { printf '密码不能为空。\n' >&2; exit 1; }
 
 run_http() {
   local action=$1
-  python3 - "$action" "$BASE" "$BASE_URL" 3<<<"$password" <<'PY'
+  "$PYTHON_BIN" - "$action" "$BASE" "$BASE_URL" 3<<<"$password" <<'PY'
 import base64, hashlib, io, os, sys, urllib.error, urllib.parse, urllib.request, zipfile
 from html.parser import HTMLParser
 action, base, base_url = sys.argv[1:4]
@@ -163,13 +182,13 @@ for path in "$ROOT/data/$BASE" "$ROOT/logs"; do
   [[ $(stat -c '%u:%g' "$path") == "$runtime_ownership" ]] || { printf 'ownership 验证失败。\n' >&2; exit 1; }
 done
 
-docker compose --project-name dufs --env-file "$ROOT/.env" -f "$ROOT/compose.yaml" restart
+"${COMPOSE[@]}" restart
 sleep 2
 curl -fsS --max-time 10 "$BASE_URL/__dufs__/health" >/dev/null
 run_http persist
 
-docker compose --project-name dufs --env-file "$ROOT/.env" -f "$ROOT/compose.yaml" down
-docker compose --project-name dufs --env-file "$ROOT/.env" -f "$ROOT/compose.yaml" up -d
+"${COMPOSE[@]}" down
+"${COMPOSE[@]}" up -d
 for _ in $(seq 1 15); do curl -fsS --max-time 3 "$BASE_URL/__dufs__/health" >/dev/null && break; sleep 1; done
 curl -fsS --max-time 3 "$BASE_URL/__dufs__/health" >/dev/null
 run_http persist

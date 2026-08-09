@@ -37,6 +37,24 @@ runtime_uid_gid() {
   printf '%s:%s\n' "$uid" "$gid"
 }
 
+resolve_python() {
+  local candidate
+  if [[ -n ${PYTHON_BIN:-} ]]; then
+    candidate=$PYTHON_BIN
+  else
+    candidate=$(command -v python3 2>/dev/null || command -v python 2>/dev/null || true)
+  fi
+  if [[ -z $candidate || ! -x $candidate ]] || ! "$candidate" -c 'import os, posixpath, sys, tarfile' >/dev/null 2>&1; then
+    printf '当前主机缺少安全恢复所需的 Python 解释器；backup 功能不受影响；restore 已拒绝执行，未修改任何数据。\n' >&2
+    return 69
+  fi
+  PYTHON_BIN=$candidate
+}
+
+canonical_path() {
+  "$PYTHON_BIN" -c 'import os, sys; print(os.path.realpath(os.path.abspath(sys.argv[1])))' "$1"
+}
+
 dangerous_target() {
   local target=$1 ancestor=$ROOT
   [[ $target == "$ROOT" || $target == "$ROOT/"* ||
@@ -51,6 +69,7 @@ dangerous_target() {
 
 verify_archive() {
   local archive=$1 checksum="${1}.sha256"
+  resolve_python || return
   [[ -f $archive && -r $archive ]] || { printf '备份文件不存在或不可读。\n' >&2; return 66; }
   [[ -f $checksum && -r $checksum ]] || { printf '缺少 checksum 文件。\n' >&2; return 65; }
   local expected actual
@@ -60,7 +79,7 @@ verify_archive() {
     printf 'checksum 验证失败。\n' >&2
     return 65
   }
-  python3 - "$archive" <<'PY'
+  "$PYTHON_BIN" - "$archive" <<'PY'
 import posixpath, sys, tarfile
 archive = sys.argv[1]
 allowed = ('compose.yaml', 'config', 'assets', 'data', 'manifest.txt')
@@ -96,9 +115,14 @@ list_archive() {
 }
 
 target_restore() {
-  local target=$1 archive=$2 resolved
+  local target=$1 archive=$2 resolved canonical_root canonical_data_root
+  resolve_python || return
   [[ ! -e $target || -d $target ]] || { printf 'target 必须是目录。\n' >&2; return 64; }
-  resolved=$(realpath -m "$target")
+  canonical_root=$(canonical_path "$ROOT") || return 65
+  canonical_data_root=$(canonical_path "$DATA_ROOT") || return 65
+  ROOT=$canonical_root
+  DATA_ROOT=$canonical_data_root
+  resolved=$(canonical_path "$target") || return 65
   if dangerous_target "$resolved"; then
     printf 'target 是危险或 production 路径，已拒绝。\n' >&2
     return 64
@@ -119,10 +143,13 @@ target_restore() {
 }
 
 production_path_restore() {
-  local relative=$1 archive=$2 staging source target ownership uid gid
+  local relative=$1 archive=$2 staging source target canonical_data_root ownership uid gid
+  resolve_python || return
   safe_relative_path "$relative" || { printf 'production path 必须是安全相对路径。\n' >&2; return 64; }
-  target="$DATA_ROOT/$relative"
-  [[ $(realpath -m "$target") == "$DATA_ROOT/"* ]] || {
+  canonical_data_root=$(canonical_path "$DATA_ROOT") || return 65
+  DATA_ROOT=$canonical_data_root
+  target=$(canonical_path "$DATA_ROOT/$relative") || return 65
+  [[ $target == "$DATA_ROOT/"* ]] || {
     printf 'production path 超出 data 目录，已拒绝。\n' >&2; return 64;
   }
   [[ ! -e $target ]] || { printf 'production target 已存在，拒绝覆盖。\n' >&2; return 64; }
